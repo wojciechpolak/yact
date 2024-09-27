@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  otd:
+    image: ${APP_IMAGE:-ghcr.io/wojciechpolak/yact:latest}
+    restart: unless-stopped
+    build: .
+    ports:
+      - "8080:80"
