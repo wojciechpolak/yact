@@ -31,8 +31,10 @@ interface CountdownTimerProps {
   playLastTenSecondsSound: boolean;
   isActive: boolean;
   resetFlag: boolean;
+  targetTime: number | null;
   onTimeUpdate: (hours: number, minutes: number, seconds: number) => void;
   onActiveChange: (active: boolean) => void;
+  onSetTargetTime: (targetTime: number | null) => void;
 }
 
 const CountdownTimer: React.FC<CountdownTimerProps> = ({
@@ -43,10 +45,13 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   playLastTenSecondsSound,
   isActive,
   resetFlag,
+  targetTime,
   onTimeUpdate,
   onActiveChange,
+  onSetTargetTime,
 }) => {
   const [timeLeft, setTimeLeft] = useState(initialTime);
+  const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [hours, setHours] = useState(Math.floor(Math.abs(initialTime) / 3600));
   const [minutes, setMinutes] = useState(
@@ -83,51 +88,98 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }
   };
 
+  // Update targetTimeState when timer starts or resets
+  useEffect(() => {
+    if (isActive) {
+      let adjustedTimeLeft = timeLeft;
+
+      // Only reset timeLeft if countUp is disabled
+      if (timeLeft <= 0 && !countUp) {
+        adjustedTimeLeft = initialTime;
+        setTimeLeft(initialTime);
+      }
+
+      if (targetTime !== null) {
+        const now = Date.now();
+        if (targetTime > now) {
+          // targetTime is in the future
+          setTargetTimeState(targetTime);
+        }
+        else {
+          // targetTime is in the past
+          if (countUp) {
+            // Continue counting up from the past targetTime
+            setTargetTimeState(targetTime);
+          }
+          else {
+            // Timer should have ended; set timeLeft to 0 and stop the timer
+            setTimeLeft(0);
+            onActiveChange(false);
+          }
+        }
+      }
+      else {
+        const now = Date.now();
+        const duration = adjustedTimeLeft * 1000; // Remaining time in milliseconds
+        const newTargetTime = now + duration;
+        setTargetTimeState(newTargetTime);
+        onSetTargetTime(newTargetTime); // Inform parent of new targetTime
+      }
+    }
+    else {
+      setTargetTimeState(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, timeLeft, targetTime]);
+
+  // Reset timeLeft when initialTime or resetFlag changes
   useEffect(() => {
     setTimeLeft(initialTime);
   }, [initialTime, resetFlag]);
 
+  // Timer logic using targetTimeState
   useEffect(() => {
     let timerId: NodeJS.Timeout | null = null;
 
-    if (isActive && !isEditing) {
+    if (isActive && !isEditing && targetTimeState !== null) {
       timerId = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          let newTime = prevTime - 1;
+        const now = Date.now();
+        let newTimeLeft = Math.round((targetTimeState - now) / 1000); // In seconds
 
-          if (newTime <= 0) {
-            if (prevTime > 0) {
-              if (playEndSound) {
-                // Play end sound
-                const audio = new Audio('/audio/end.mp3');
-                audio.play();
-              }
-              if (showNotifications) {
-                sendNotification();
-              }
-            }
-
-            if (repeat) {
-              newTime = initialTime;
-            }
-            else if (countUp) {
-              // Continue counting down into negatives
-              // newTime is already prevTime - 1
-            }
-            else {
-              newTime = 0;
-            }
-          }
-          else {
-            if (playLastTenSecondsSound && newTime <= 10 && newTime > 0) {
-              // Play ticking sound
-              const audio = new Audio('/audio/tick.mp3');
+        if (newTimeLeft <= 0) {
+          if (newTimeLeft === 0) {
+            if (playEndSound) {
+              const audio = new Audio('/audio/end.mp3');
               audio.play();
             }
+            if (showNotifications) {
+              sendNotification();
+            }
           }
 
-          return newTime;
-        });
+          if (repeat) {
+            const newTargetTime = now + initialTime * 1000;
+            setTargetTimeState(newTargetTime);
+            onSetTargetTime(newTargetTime); // Inform parent of new targetTime
+            newTimeLeft = initialTime;
+          }
+          else if (countUp) {
+            // Continue counting up (negative values)
+            // newTimeLeft is already negative
+          }
+          else {
+            newTimeLeft = 0;
+            onActiveChange(false); // Stop the timer
+          }
+        }
+        else {
+          if (playLastTenSecondsSound && newTimeLeft <= 10 && newTimeLeft > 0) {
+            const audio = new Audio('/audio/tick.mp3');
+            audio.play();
+          }
+        }
+
+        setTimeLeft(newTimeLeft);
       }, 1000);
     }
 
@@ -137,31 +189,20 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   }, [
     isActive,
     isEditing,
+    targetTimeState,
     initialTime,
     repeat,
     countUp,
     playEndSound,
     playLastTenSecondsSound,
     showNotifications,
+    onActiveChange,
+    onSetTargetTime,
   ]);
 
-  // Adjusted useEffect to consider countUp
-  useEffect(() => {
-    if (isActive && timeLeft === 0 && !isEditing && !countUp) {
-      setTimeLeft(initialTime);
-    }
-  }, [isActive, timeLeft, initialTime, isEditing, countUp]);
-
-  // Existing useEffect to handle stopping the timer
-  useEffect(() => {
-    if (timeLeft === 0 && isActive && !repeat && !countUp && !isEditing) {
-      onActiveChange(false);
-    }
-  }, [timeLeft, isActive, repeat, countUp, isEditing, onActiveChange]);
-
+  // Update hours, minutes, and seconds when timeLeft changes
   useEffect(() => {
     if (!isEditing) {
-      // Update hours, minutes, and seconds when timeLeft changes
       const absTimeLeft = Math.abs(timeLeft);
       setHours(Math.floor(absTimeLeft / 3600));
       setMinutes(Math.floor((absTimeLeft % 3600) / 60));

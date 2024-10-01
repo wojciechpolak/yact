@@ -37,6 +37,7 @@ export default function Home() {
   const [repeat, setRepeat] = useState(false);
   const [isActive, setIsActive] = useState(false); // Timer active state
   const [resetFlag, setResetFlag] = useState(false); // Flag to trigger reset
+  const [targetTime, setTargetTime] = useState<number | null>(null);
 
   const _setIsActive = ((val: boolean) => {
     localStorage.setItem('active', val.toString());
@@ -63,6 +64,7 @@ export default function Home() {
     const secondsParam = searchParams.get('seconds') || localStorage.getItem('seconds');
     const repeatParam = searchParams.get('repeat') || localStorage.getItem('repeat');
     const activeParam = searchParams.get('active') || localStorage.getItem('active');
+    const targetTimeParam = searchParams.get('targetTime') || localStorage.getItem('targetTime');
 
     const hours = hoursParam ? parseInt(hoursParam) : 0;
     const minutes = minutesParam ? parseInt(minutesParam) : 1; // Default to 1 minute
@@ -74,15 +76,29 @@ export default function Home() {
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
     setInitialTime(totalSeconds);
     setSavedInitialTime(totalSeconds);
+
+    // Set targetTime from URL if available
+    if (targetTimeParam) {
+      const targetTimeFromURL = parseInt(targetTimeParam);
+      setTargetTime(targetTimeFromURL);
+    }
+    else {
+      setTargetTime(null);
+    }
   }, [searchParams]);
 
   // Update URL parameters when settings change
   useEffect(() => {
-    updateURLParams();
+    updateURLParams(undefined, undefined, undefined, targetTime);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTime, repeat, isActive]);
+  }, [initialTime, repeat, isActive, targetTime]);
 
-  const updateURLParams = (hours?: number, minutes?: number, seconds?: number) => {
+  const updateURLParams = (
+    hours?: number,
+    minutes?: number,
+    seconds?: number,
+    targetTimeParam?: number | null
+  ) => {
     const params = new URLSearchParams();
 
     const totalSeconds =
@@ -101,6 +117,15 @@ export default function Home() {
     params.set('repeat', repeat.toString());
     params.set('active', isActive.toString());
 
+    // Include targetTime in the URL if the timer is active
+    if (isActive && targetTimeParam) {
+      params.set('targetTime', targetTimeParam.toString());
+    }
+    else {
+      // Remove targetTime from URL if timer is not active
+      params.delete('targetTime');
+    }
+
     const url = `${window.location.pathname}?${params.toString()}`;
     router.replace(url);
   };
@@ -117,23 +142,26 @@ export default function Home() {
   // Handlers for Start, Pause, Reset
   const handleStart = () => {
     _setIsActive(true);
+    updateURLParams(undefined, undefined, undefined, targetTime);
   };
 
   const handlePause = () => {
     _setIsActive(false);
+    updateURLParams(undefined, undefined, undefined, null);
   };
 
   const handleReset = () => {
     _setIsActive(false);
+    setTargetTime(null);
     // Reset to saved initial time
     setInitialTime(savedInitialTime);
     setResetFlag((prev) => !prev); // Toggle resetFlag to trigger reset
-    updateURLParams();
+    updateURLParams(undefined, undefined, undefined, null);
   };
 
   // Update repeat in URL when it changes
   useEffect(() => {
-    updateURLParams();
+    updateURLParams(undefined, undefined, undefined, targetTime);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repeat]);
 
@@ -144,6 +172,8 @@ export default function Home() {
     seconds: (initialTime % 60).toString(),
     repeat: repeat.toString(),
     active: isActive.toString(),
+    // Include targetTime if the timer is active
+    ...(isActive && targetTime !== null ? {targetTime: targetTime.toString()} : {}),
   };
 
   // Add keyboard event listener for space bar
@@ -218,15 +248,20 @@ export default function Home() {
           playLastTenSecondsSound={playLastTenSecondsSound}
           isActive={isActive}
           resetFlag={resetFlag}
+          targetTime={targetTime}
           onTimeUpdate={(hours, minutes, seconds) => {
             const totalSeconds = hours * 3600 + minutes * 60 + seconds;
             setInitialTime(totalSeconds);
             setSavedInitialTime(totalSeconds); // Update saved initial time
-            updateURLParams(hours, minutes, seconds);
+            updateURLParams(hours, minutes, seconds, targetTime);
           }}
           onActiveChange={(active) => {
             setIsActive(active);
-            updateURLParams();
+            updateURLParams(undefined, undefined, undefined, targetTime);
+          }}
+          onSetTargetTime={(newTargetTime) => {
+            setTargetTime(newTargetTime);
+            updateURLParams(undefined, undefined, undefined, newTargetTime);
           }}
         />
       </div>
