@@ -19,7 +19,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -88,6 +88,20 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }
   };
 
+  const audioContext = useRef<AudioContext | null>(null);
+  const audioBuffers = useRef<{[key: string]: AudioBuffer}>({});
+
+  useEffect(() => {
+    initializeAudioContext();
+    if (audioContext.current) {
+      unlockAudioContext(audioContext.current);
+      preloadSounds([
+        '/audio/end.mp3',
+        '/audio/tick.mp3'
+      ]);
+    }
+  }, []);
+
   // Update targetTimeState when timer starts or resets
   useEffect(() => {
     if (isActive) {
@@ -149,8 +163,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         if (newTimeLeft <= 0) {
           if (newTimeLeft === 0) {
             if (playEndSound) {
-              const audio = new Audio('/audio/end.mp3');
-              audio.play();
+              playSound('/audio/end.mp3');
             }
             if (showNotifications) {
               sendNotification();
@@ -174,8 +187,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         }
         else {
           if (playLastTenSecondsSound && newTimeLeft <= 10 && newTimeLeft > 0) {
-            const audio = new Audio('/audio/tick.mp3');
-            audio.play();
+            playSound('/audio/tick.mp3');
           }
         }
 
@@ -256,6 +268,62 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     if (onTimeUpdate) {
       onTimeUpdate(sanitizedHours, sanitizedMinutes, sanitizedSeconds);
     }
+  };
+
+  const initializeAudioContext = () => {
+    if (!audioContext.current) {
+      if (window.AudioContext) {
+        audioContext.current = new window.AudioContext();
+      }
+    }
+  };
+
+  const unlockAudioContext = (audioCtx: AudioContext) => {
+    if (audioCtx.state !== 'suspended') {
+      return;
+    }
+
+    const resume = () => {
+      audioCtx.resume();
+      document.body.removeEventListener('touchstart', resume, false);
+      document.body.removeEventListener('touchend', resume, false);
+      document.body.removeEventListener('click', resume, false);
+    };
+
+    document.body.addEventListener('touchstart', resume, false);
+    document.body.addEventListener('touchend', resume, false);
+    document.body.addEventListener('click', resume, false);
+  };
+
+  const preloadSounds = (urls: string[]) => {
+    if (!audioContext.current) {
+      return;
+    }
+
+    urls.forEach((url) => {
+      fetch(url)
+        .then((response) => response.arrayBuffer())
+        .then((arrayBuffer) => audioContext.current!.decodeAudioData(arrayBuffer))
+        .then((audioBuffer) => {
+          audioBuffers.current[url] = audioBuffer;
+        })
+        .catch((error) => console.error('Error preloading sound:', error));
+    });
+  };
+
+  const playSound = (url: string) => {
+    if (!audioContext.current) {
+      return;
+    }
+    const audioBuffer = audioBuffers.current[url];
+    if (!audioBuffer) {
+      console.error('Audio buffer not found for url:', url);
+      return;
+    }
+    const source = audioContext.current.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.current.destination);
+    source.start(0);
   };
 
   return (

@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  otd:
+  yact:
     image: ${APP_IMAGE:-ghcr.io/wojciechpolak/yact:latest}
     restart: unless-stopped
     build: .
