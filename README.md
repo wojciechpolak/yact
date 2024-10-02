@@ -28,6 +28,12 @@ scratch with Next.js, React, and Tailwind CSS.
 - Settings Persistence: User preferences are saved locally to maintain
   settings across sessions.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./.screenshots/main-view-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./.screenshots/main-view-light.png">
+  <img alt="Screenshot of YACT" src="./.screenshots/main-view-light.png">
+</picture>
+
 ## Running
 
 ### Running with Docker (out of the box)
