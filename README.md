@@ -39,7 +39,7 @@ scratch with Next.js, React, and Tailwind CSS.
 ### Running with Docker (out of the box)
 
 ```shell
-docker run -it -p 8080:80 --name yact ghcr.io/wojciechpolak/yact
+docker run -it -p 8080:8080 --name yact ghcr.io/wojciechpolak/yact
 ```
 
 ### Running with Docker Compose
