@@ -92,15 +92,18 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   const audioBuffers = useRef<{[key: string]: AudioBuffer}>({});
 
   useEffect(() => {
-    initializeAudioContext();
-    if (audioContext.current) {
-      unlockAudioContext(audioContext.current);
-      preloadSounds([
-        '/audio/end.mp3',
-        '/audio/tick.mp3'
-      ]);
+    if (isActive) {
+      initializeAudioContext();
+      if (audioContext.current) {
+        unlockAudioContext(audioContext.current);
+        preloadSounds([
+          '/audio/end.mp3',
+          '/audio/tick.mp3'
+        ]);
+      }
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   // Update targetTimeState when timer starts or resets
   useEffect(() => {
@@ -282,6 +285,9 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     if (audioCtx.state !== 'suspended') {
       return;
     }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
 
     const resume = () => {
       audioCtx.resume();
@@ -301,18 +307,21 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }
 
     urls.forEach((url) => {
-      fetch(url)
-        .then((response) => response.arrayBuffer())
-        .then((arrayBuffer) => audioContext.current!.decodeAudioData(arrayBuffer))
-        .then((audioBuffer) => {
-          audioBuffers.current[url] = audioBuffer;
-        })
-        .catch((error) => console.error('Error preloading sound:', error));
+      if (!(url in audioBuffers.current)) {
+        fetch(url)
+          .then((response) => response.arrayBuffer())
+          .then((arrayBuffer) => audioContext.current!.decodeAudioData(arrayBuffer))
+          .then((audioBuffer) => {
+            audioBuffers.current[url] = audioBuffer;
+          })
+          .catch((error) => console.error('Error preloading sound:', error));
+      }
     });
   };
 
   const playSound = (url: string) => {
     if (!audioContext.current) {
+      console.warn('Cannot play sound before user interaction');
       return;
     }
     const audioBuffer = audioBuffers.current[url];
