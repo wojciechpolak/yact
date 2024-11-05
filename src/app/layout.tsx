@@ -19,6 +19,7 @@
 
 import type { Metadata } from 'next';
 import { SettingsProvider } from '@/context/SettingsContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import Footer from '@/components/Footer';
 import './globals.css';
 
@@ -37,10 +38,14 @@ export default function RootLayout({
       <body
         className={`antialiased`}
       >
+      <ThemeProvider
+        attribute="class"
+      >
         <SettingsProvider>
           {children}
           <Footer />
         </SettingsProvider>
+      </ThemeProvider>
       </body>
     </html>
   );

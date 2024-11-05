@@ -22,6 +22,8 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/context/SettingsContext';
 
 const SettingsPage = () => {
@@ -65,55 +67,47 @@ const SettingsPage = () => {
         </div>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <span className="text-xl">Count up when timer ends</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={countUp}
-                onChange={(e) => setCountUp(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600"></div>
-            </label>
+            <Label htmlFor="countUp"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Count up when timer ends
+            </Label>
+            <Switch id="countUp"
+              checked={countUp}
+              onCheckedChange={(checked) => setCountUp(checked)}
+            />
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-xl">Show notifications when timer ends</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showNotifications}
-                onChange={(e) => setShowNotifications(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600"></div>
-            </label>
+            <Label htmlFor="showNotifications"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Show notifications when timer ends
+            </Label>
+            <Switch id="showNotifications"
+              checked={showNotifications}
+              onCheckedChange={(checked) => setShowNotifications(checked)}
+            />
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-xl">Play sound when timer ends</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={playEndSound}
-                onChange={(e) => setPlayEndSound(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600"></div>
-            </label>
+            <Label htmlFor="playEndSound"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Play sound when timer ends
+            </Label>
+            <Switch id="playEndSound"
+              checked={playEndSound}
+              onCheckedChange={(checked) => setPlayEndSound(checked)}
+            />
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-xl">Play sound at each of the last 10 seconds</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={playLastTenSecondsSound}
-                onChange={(e) => setPlayLastTenSecondsSound(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600"></div>
-            </label>
+            <Label htmlFor="playLastTenSecondsSound"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Play sound at each of the last 10 seconds
+            </Label>
+            <Switch id="playLastTenSecondsSound"
+                    checked={playLastTenSecondsSound}
+                    onCheckedChange={(checked) => setPlayLastTenSecondsSound(checked)}
+            />
           </div>
         </div>
       </div>

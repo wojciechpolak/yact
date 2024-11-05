@@ -45,7 +45,7 @@ docker run -it -p 8080:8080 --name yact ghcr.io/wojciechpolak/yact
 ### Running with Docker Compose
 
 ```shell
-docker compose up
+curl https://raw.githubusercontent.com/wojciechpolak/yact/master/docker-compose.yml | docker compose -f - up
 ```
 
 ### Running from the source code

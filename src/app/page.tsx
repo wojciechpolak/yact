@@ -23,6 +23,8 @@ import { useState, useEffect } from 'react';
 import { FaExpand, FaCog } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import CountdownTimer from '@/components/CountdownTimer';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -214,18 +216,14 @@ export default function Home() {
           </button>
         )}
         {/* Repeat Toggle */}
-        <label className="flex items-center space-x-2">
-          <span>Repeat</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={repeat}
-              onChange={(e) => _setRepeat(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-blue-600"></div>
-          </label>
-        </label>
+        <Label htmlFor="repeat"
+               className="text-base text-flex items-center space-x-2">
+          Repeat
+        </Label>
+        <Switch id="repeat"
+          checked={repeat}
+          onCheckedChange={(checked) => _setRepeat(checked)}
+        />
         {/* Settings Link */}
         <Link
           href={{ pathname: '/settings', query: queryParams }}
