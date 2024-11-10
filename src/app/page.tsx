@@ -22,7 +22,8 @@
 import { useState, useEffect } from 'react';
 import { FaExpand, FaCog } from 'react-icons/fa';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useHashParams } from '@/lib/useHashParams';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import CountdownTimer from '@/components/CountdownTimer';
@@ -30,7 +31,7 @@ import { useSettings } from '@/context/SettingsContext';
 
 export default function Home() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const hashParams = useHashParams();
   const isMobile = 'ontouchstart' in window || !!navigator.maxTouchPoints;
 
   // Timer settings from URL parameters
@@ -61,12 +62,12 @@ export default function Home() {
   // Load timer settings from URL parameters whenever they change
   useEffect(() => {
     // Parse URL parameters using useSearchParams
-    const hoursParam = searchParams.get('hours') || localStorage.getItem('hours');
-    const minutesParam = searchParams.get('minutes') || localStorage.getItem('minutes');
-    const secondsParam = searchParams.get('seconds') || localStorage.getItem('seconds');
-    const repeatParam = searchParams.get('repeat') || localStorage.getItem('repeat');
-    const activeParam = searchParams.get('active') || localStorage.getItem('active');
-    const targetTimeParam = searchParams.get('targetTime') || localStorage.getItem('targetTime');
+    const hoursParam = hashParams.get('hours') || localStorage.getItem('hours');
+    const minutesParam = hashParams.get('minutes') || localStorage.getItem('minutes');
+    const secondsParam = hashParams.get('seconds') || localStorage.getItem('seconds');
+    const repeatParam = hashParams.get('repeat') || localStorage.getItem('repeat');
+    const activeParam = hashParams.get('active') || localStorage.getItem('active');
+    const targetTimeParam = hashParams.get('targetTime') || localStorage.getItem('targetTime');
 
     const hours = hoursParam ? parseInt(hoursParam) : 0;
     const minutes = minutesParam ? parseInt(minutesParam) : 1; // Default to 1 minute
@@ -87,7 +88,7 @@ export default function Home() {
     else {
       setTargetTime(null);
     }
-  }, [searchParams]);
+  }, [hashParams]);
 
   // Update URL parameters when settings change
   useEffect(() => {
@@ -128,7 +129,7 @@ export default function Home() {
       params.delete('targetTime');
     }
 
-    const url = `${window.location.pathname}?${params.toString()}`;
+    const url = `${window.location.pathname}#${params.toString()}`;
     router.replace(url);
   };
 
@@ -168,7 +169,7 @@ export default function Home() {
   }, [repeat]);
 
   // Build query parameters object to pass to Link components
-  const queryParams = {
+  const queryParams = new URLSearchParams({
     hours: Math.floor(initialTime / 3600).toString(),
     minutes: Math.floor((initialTime % 3600) / 60).toString(),
     seconds: (initialTime % 60).toString(),
@@ -176,7 +177,7 @@ export default function Home() {
     active: isActive.toString(),
     // Include targetTime if the timer is active
     ...(isActive && targetTime !== null ? {targetTime: targetTime.toString()} : {}),
-  };
+  });
 
   // Add keyboard event listener for space bar
   useEffect(() => {
@@ -226,7 +227,7 @@ export default function Home() {
         />
         {/* Settings Link */}
         <Link
-          href={{ pathname: '/settings', query: queryParams }}
+          href={{ pathname: '/settings', hash: queryParams.toString() }}
           passHref
         >
           <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1">

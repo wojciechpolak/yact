@@ -20,14 +20,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { FaArrowLeft } from 'react-icons/fa';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useHashParams } from '@/lib/useHashParams';
 import { useSettings } from '@/context/SettingsContext';
 
 const SettingsPage = () => {
-  const searchParams = useSearchParams();
+  const hashParams = useHashParams();
 
   // Use settings from context
   const {
@@ -42,13 +42,13 @@ const SettingsPage = () => {
   } = useSettings();
 
   // Build query parameters object to pass back to the main page
-  const queryParams = {
-    hours: searchParams.get('hours') || localStorage.getItem('hours') || '0',
-    minutes: searchParams.get('minutes') || localStorage.getItem('minutes') || '1',
-    seconds: searchParams.get('seconds') || localStorage.getItem('seconds') || '0',
-    repeat: searchParams.get('repeat') || localStorage.getItem('repeat') || 'false',
-    active: searchParams.get('active') || localStorage.getItem('active') || 'false',
-  };
+  const queryParams = new URLSearchParams({
+    hours: hashParams.get('hours') || localStorage.getItem('hours') || '0',
+    minutes: hashParams.get('minutes') || localStorage.getItem('minutes') || '1',
+    seconds: hashParams.get('seconds') || localStorage.getItem('seconds') || '0',
+    repeat: hashParams.get('repeat') || localStorage.getItem('repeat') || 'false',
+    active: hashParams.get('active') || localStorage.getItem('active') || 'false',
+  });
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -56,7 +56,7 @@ const SettingsPage = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Settings</h1>
           <Link
-            href={{ pathname: '/', query: queryParams }}
+            href={{ pathname: '/', hash: queryParams.toString() }}
             passHref
           >
             <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1 hover:scale-105">
