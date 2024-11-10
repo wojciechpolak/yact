@@ -11,6 +11,8 @@
 /.next/
 /dist/
 /out/
+public/sw*
+public/swe-worker*
 
 # production
 /build
