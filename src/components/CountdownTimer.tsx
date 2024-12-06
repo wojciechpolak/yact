@@ -339,7 +339,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     <div className="flex flex-col items-center">
       {/* Timer Display */}
       <div
-        className="text-[15vw] font-mono cursor-pointer select-none w-full text-center leading-none"
+        className="text-[15vw] font-mono cursor-pointer select-none text-center leading-none"
         onClick={openEditor}
       >
         {timeLeft < 0 && '+'}
