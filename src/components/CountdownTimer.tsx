@@ -102,7 +102,6 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         ]);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   // Update targetTimeState when timer starts or resets
