@@ -1,7 +1,7 @@
 /**
  * src/components/CountdownTimer.tsx
  *
- * YACT Copyright (C) 2024 Wojciech Polak
+ * YACT Copyright (C) 2024-2025 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,9 +19,11 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { FaPlus, FaMinus } from 'react-icons/fa';
+import { useEffect } from 'react';
 import { useSettings } from '@/context/SettingsContext';
+import { useAudioManager } from '@/hooks/useAudioManager';
+import { useCountdownTimer } from '@/hooks/useCountdownTimer';
+import TimerEditorModal from '@/components/TimerEditorModal';
 
 interface CountdownTimerProps {
   initialTime: number;
@@ -29,15 +31,14 @@ interface CountdownTimerProps {
   countUp: boolean;
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
-  isActive: boolean;
-  resetFlag: boolean;
-  targetTime: number | null;
-  onTimeUpdate: (hours: number, minutes: number, seconds: number) => void;
+  isActive: boolean;    // parent sets or toggles
+  resetFlag: boolean;   // parent toggles for reset
+  onResetHandled: () => void; // parent sets resetFlag back to false
+  onTimeUpdate?: (h: number, m: number, s: number) => void; // Called on manual edit
   onActiveChange: (active: boolean) => void;
-  onSetTargetTime: (targetTime: number | null) => void;
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({
+export default function CountdownTimer({
   initialTime,
   repeat,
   countUp,
@@ -45,30 +46,27 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   playLastTenSecondsSound,
   isActive,
   resetFlag,
-  targetTime,
+  onResetHandled,
   onTimeUpdate,
   onActiveChange,
-  onSetTargetTime,
-}) => {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
-  const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [hours, setHours] = useState(Math.floor(Math.abs(initialTime) / 3600));
-  const [minutes, setMinutes] = useState(
-    Math.floor((Math.abs(initialTime) % 3600) / 60)
-  );
-  const [seconds, setSeconds] = useState(Math.abs(initialTime) % 60);
+}: CountdownTimerProps) {
 
-  // Use settings from context
   const { showNotifications } = useSettings();
 
-  // Function to handle notification permission and sending
+  // Audio manager
+  const {
+    initializeAudioContext,
+    unlockAudioContext,
+    preloadSounds,
+    playSound,
+  } = useAudioManager();
+
+  // Notification function
   const sendNotification = () => {
     if (!('Notification' in window)) {
       console.log('This browser does not support desktop notification');
       return;
     }
-
     if (Notification.permission === 'granted') {
       new Notification('Timer Finished', {
         body: 'Your countdown timer has ended.',
@@ -76,7 +74,6 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
       });
     }
     else if (Notification.permission !== 'denied') {
-      // Ask for permission
       Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
           new Notification('Timer Finished', {
@@ -88,251 +85,75 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }
   };
 
-  const audioContext = useRef<AudioContext | null>(null);
-  const audioBuffers = useRef<{[key: string]: AudioBuffer}>({});
-
+  // Preload audio if we are active
   useEffect(() => {
     if (isActive) {
       initializeAudioContext();
-      if (audioContext.current) {
-        unlockAudioContext(audioContext.current);
-        preloadSounds([
-          '/audio/end.mp3',
-          '/audio/tick.mp3'
-        ]);
-      }
+      unlockAudioContext();
+      preloadSounds([
+        '/audio/end.mp3',
+        '/audio/tick.mp3'
+      ]);
     }
-  }, [isActive]);
-
-  // Update targetTimeState when timer starts or resets
-  useEffect(() => {
-    if (isActive) {
-      let adjustedTimeLeft = timeLeft;
-
-      // Only reset timeLeft if countUp is disabled
-      if (timeLeft <= 0 && !countUp) {
-        adjustedTimeLeft = initialTime;
-        setTimeLeft(initialTime);
-      }
-
-      if (targetTime !== null) {
-        const now = Date.now();
-        if (targetTime > now) {
-          // targetTime is in the future
-          setTargetTimeState(targetTime);
-        }
-        else {
-          // targetTime is in the past
-          if (countUp) {
-            // Continue counting up from the past targetTime
-            setTargetTimeState(targetTime);
-          }
-          else {
-            // Timer should have ended; set timeLeft to 0 and stop the timer
-            setTimeLeft(0);
-            onActiveChange(false);
-          }
-        }
-      }
-      else {
-        const now = Date.now();
-        const duration = adjustedTimeLeft * 1000; // Remaining time in milliseconds
-        const newTargetTime = now + duration;
-        setTargetTimeState(newTargetTime);
-        onSetTargetTime(newTargetTime); // Inform parent of new targetTime
-      }
-    }
-    else {
-      setTargetTimeState(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, timeLeft, targetTime]);
-
-  // Reset timeLeft when initialTime or resetFlag changes
-  useEffect(() => {
-    setTimeLeft(initialTime);
-  }, [initialTime, resetFlag]);
-
-  // Timer logic using targetTimeState
-  useEffect(() => {
-    let timerId: NodeJS.Timeout | null = null;
-
-    if (isActive && !isEditing && targetTimeState !== null) {
-      timerId = setInterval(() => {
-        const now = Date.now();
-        let newTimeLeft = Math.round((targetTimeState - now) / 1000); // In seconds
-
-        if (newTimeLeft <= 0) {
-          if (newTimeLeft === 0) {
-            if (playEndSound) {
-              playSound('/audio/end.mp3');
-            }
-            if (showNotifications) {
-              sendNotification();
-            }
-          }
-
-          if (repeat) {
-            const newTargetTime = now + initialTime * 1000;
-            setTargetTimeState(newTargetTime);
-            onSetTargetTime(newTargetTime); // Inform parent of new targetTime
-            newTimeLeft = initialTime;
-          }
-          else if (countUp) {
-            // Continue counting up (negative values)
-            // newTimeLeft is already negative
-          }
-          else {
-            newTimeLeft = 0;
-            onActiveChange(false); // Stop the timer
-          }
-        }
-        else {
-          if (playLastTenSecondsSound && newTimeLeft <= 10 && newTimeLeft > 0) {
-            playSound('/audio/tick.mp3');
-          }
-        }
-
-        setTimeLeft(newTimeLeft);
-      }, 1000);
-    }
-
-    return () => {
-      if (timerId) clearInterval(timerId);
-    };
   }, [
+    initializeAudioContext,
     isActive,
+    preloadSounds,
+    unlockAudioContext,
+  ]);
+
+  // Hook: main timer logic
+  const {
+    timeLeft,
+    setTimeLeft,
     isEditing,
-    targetTimeState,
+    openEditor,
+    closeEditor,
+    h,
+    m,
+    s,
+  } = useCountdownTimer({
     initialTime,
-    repeat,
+    isActive,
     countUp,
+    repeat,
     playEndSound,
     playLastTenSecondsSound,
     showNotifications,
+    resetFlag,
     onActiveChange,
-    onSetTargetTime,
-  ]);
-
-  // Update hours, minutes, and seconds when timeLeft changes
-  useEffect(() => {
-    if (!isEditing) {
-      const absTimeLeft = Math.abs(timeLeft);
-      setHours(Math.floor(absTimeLeft / 3600));
-      setMinutes(Math.floor((absTimeLeft % 3600) / 60));
-      setSeconds(absTimeLeft % 60);
-    }
-  }, [timeLeft, isEditing]);
+    onPlaySound: playSound,
+    onSendNotification: sendNotification,
+    onResetHandled,
+  });
 
   // Update the document title with the timer
   useEffect(() => {
-    // Determine the sign for "Count up" phase
     const sign = timeLeft < 0 ? '+' : '';
-
-    // Format the time based on whether hours are zero
+    const fmt = (val: number) => val.toString().padStart(2, '0');
     const formattedTime =
-      hours === 0
-        ? `${sign}${formatTime(minutes)}:${formatTime(seconds)}`
-        : `${sign}${hours}:${formatTime(minutes)}:${formatTime(seconds)}`;
-
-    // Update the document title
+      h === 0 ? `${sign}${fmt(m)}:${fmt(s)}` : `${sign}${h}:${fmt(m)}:${fmt(s)}`;
     document.title = `${formattedTime} Countdown | YACT`;
-  }, [timeLeft, hours, minutes, seconds]);
+  }, [timeLeft, h, m, s]);
 
-  const formatTime = (value: number) => {
-    return value.toString().padStart(2, '0');
-  };
+  // Handle manual editor saving
+  const handleSaveEditor = (hours: number, minutes: number, seconds: number) => {
+    const hh = Math.max(0, hours);
+    const mm = Math.max(0, minutes);
+    const ss = Math.max(0, seconds);
 
-  const openEditor = () => {
-    setIsEditing(true);
-    // Pause timer while editing
-    onActiveChange(false);
-  };
+    localStorage.setItem('hours', hh.toString());
+    localStorage.setItem('minutes', mm.toString());
+    localStorage.setItem('seconds', ss.toString());
 
-  const closeEditor = () => {
-    setIsEditing(false);
-  };
-
-  const saveAndCloseEditor = () => {
-    // Ensure values are non-negative
-    const sanitizedHours = Math.max(0, hours);
-    const sanitizedMinutes = Math.max(0, minutes);
-    const sanitizedSeconds = Math.max(0, seconds);
-
-    localStorage.setItem('hours', sanitizedHours.toString());
-    localStorage.setItem('minutes', sanitizedMinutes.toString());
-    localStorage.setItem('seconds', sanitizedSeconds.toString());
-
-    const totalSeconds =
-      sanitizedHours * 3600 + sanitizedMinutes * 60 + sanitizedSeconds;
+    const totalSeconds = hh * 3600 + mm * 60 + ss;
     setTimeLeft(totalSeconds);
-    setIsEditing(false);
-    if (onTimeUpdate) {
-      onTimeUpdate(sanitizedHours, sanitizedMinutes, sanitizedSeconds);
-    }
+
+    closeEditor();
+    onTimeUpdate?.(hh, mm, ss);
   };
 
-  const initializeAudioContext = () => {
-    if (!audioContext.current) {
-      if (window.AudioContext) {
-        audioContext.current = new window.AudioContext();
-      }
-    }
-  };
-
-  const unlockAudioContext = (audioCtx: AudioContext) => {
-    if (audioCtx.state !== 'suspended') {
-      return;
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-
-    const resume = () => {
-      audioCtx.resume();
-      document.body.removeEventListener('touchstart', resume, false);
-      document.body.removeEventListener('touchend', resume, false);
-      document.body.removeEventListener('click', resume, false);
-    };
-
-    document.body.addEventListener('touchstart', resume, false);
-    document.body.addEventListener('touchend', resume, false);
-    document.body.addEventListener('click', resume, false);
-  };
-
-  const preloadSounds = (urls: string[]) => {
-    if (!audioContext.current) {
-      return;
-    }
-
-    urls.forEach((url) => {
-      if (!(url in audioBuffers.current)) {
-        fetch(url)
-          .then((response) => response.arrayBuffer())
-          .then((arrayBuffer) => audioContext.current!.decodeAudioData(arrayBuffer))
-          .then((audioBuffer) => {
-            audioBuffers.current[url] = audioBuffer;
-          })
-          .catch((error) => console.error('Error preloading sound:', error));
-      }
-    });
-  };
-
-  const playSound = (url: string) => {
-    if (!audioContext.current) {
-      console.warn('Cannot play sound before user interaction');
-      return;
-    }
-    const audioBuffer = audioBuffers.current[url];
-    if (!audioBuffer) {
-      console.error('Audio buffer not found for url:', url);
-      return;
-    }
-    const source = audioContext.current.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.current.destination);
-    source.start(0);
-  };
+  const fmt = (val: number) => val.toString().padStart(2, '0');
 
   return (
     <div className="flex flex-col items-center">
@@ -342,116 +163,17 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
         onClick={openEditor}
       >
         {timeLeft < 0 && '+'}
-        {formatTime(hours)}:{formatTime(minutes)}:{formatTime(seconds)}
+        {fmt(h)}:{fmt(m)}:{fmt(s)}
       </div>
 
-      {/* Editing Modal */}
-      {isEditing && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-3xl w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-3xl">Set Timer</h2>
-              <button
-                onClick={closeEditor}
-                className="text-gray-500 hover:text-gray-600 hover:scale-110 text-3xl"
-              >
-                ✕
-              </button>
-            </div>
-            {/* Time Editing Controls */}
-            <div className="flex space-x-8 mb-8 justify-center">
-              {/* Hours */}
-              <div className="flex flex-col items-center">
-                <button
-                  onClick={() => setHours(hours + 1)}
-                  className="text-4xl hover:scale-110"
-                >
-                  <FaPlus />
-                </button>
-                <input
-                  type="number"
-                  value={hours}
-                  onChange={(e) => setHours(Number(e.target.value))}
-                  className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
-                />
-                <button
-                  onClick={() => setHours(hours > 0 ? hours - 1 : 0)}
-                  className="text-4xl hover:scale-110"
-                >
-                  <FaMinus />
-                </button>
-                <span className="mt-2 text-xl">Hours</span>
-              </div>
-
-              {/* Minutes */}
-              <div className="flex flex-col items-center">
-                <button
-                  onClick={() => setMinutes(minutes + 1)}
-                  className="text-4xl hover:scale-110"
-                >
-                  <FaPlus />
-                </button>
-                <input
-                  type="number"
-                  value={minutes}
-                  onChange={(e) => setMinutes(Number(e.target.value))}
-                  className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
-                />
-                <button
-                  onClick={() =>
-                    setMinutes(minutes > 0 ? minutes - 1 : 0)
-                  }
-                  className="text-4xl hover:scale-110"
-                >
-                  <FaMinus />
-                </button>
-                <span className="mt-2 text-xl">Minutes</span>
-              </div>
-
-              {/* Seconds */}
-              <div className="flex flex-col items-center">
-                <button
-                  onClick={() => setSeconds(seconds + 1)}
-                  className="text-4xl hover:scale-110"
-                >
-                  <FaPlus />
-                </button>
-                <input
-                  type="number"
-                  value={seconds}
-                  onChange={(e) => setSeconds(Number(e.target.value))}
-                  className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
-                />
-                <button
-                  onClick={() =>
-                    setSeconds(seconds > 0 ? seconds - 1 : 0)
-                  }
-                  className="text-4xl hover:scale-110"
-                >
-                  <FaMinus />
-                </button>
-                <span className="mt-2 text-xl">Seconds</span>
-              </div>
-            </div>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={closeEditor}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded text-xl"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveAndCloseEditor}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded text-xl"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TimerEditorModal
+        isOpen={isEditing}
+        hours={h}
+        minutes={m}
+        seconds={s}
+        onClose={closeEditor}
+        onSave={handleSaveEditor}
+      />
     </div>
   );
-};
-
-export default CountdownTimer;
+}

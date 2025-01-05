@@ -1,7 +1,7 @@
 /**
  * src/app/page.tsx
  *
- * YACT Copyright (C) 2024 Wojciech Polak
+ * YACT Copyright (C) 2024-2025 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,10 +23,11 @@ import { useState, useEffect } from 'react';
 import { FaExpand, FaCog } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useHashParams } from '@/lib/useHashParams';
+
+import CountdownTimer from '@/components/CountdownTimer';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import CountdownTimer from '@/components/CountdownTimer';
+import { useHashParams } from '@/lib/useHashParams';
 import { useSettings } from '@/context/SettingsContext';
 
 export default function Home() {
@@ -162,6 +163,10 @@ export default function Home() {
     updateURLParams(undefined, undefined, undefined, null);
   };
 
+  const handleResetHandled = () => {
+    setResetFlag(false);
+  };
+
   // Update repeat in URL when it changes
   useEffect(() => {
     updateURLParams(undefined, undefined, undefined, targetTime);
@@ -247,7 +252,7 @@ export default function Home() {
           playLastTenSecondsSound={playLastTenSecondsSound}
           isActive={isActive}
           resetFlag={resetFlag}
-          targetTime={targetTime}
+          onResetHandled={handleResetHandled}
           onTimeUpdate={(hours, minutes, seconds) => {
             const totalSeconds = hours * 3600 + minutes * 60 + seconds;
             setInitialTime(totalSeconds);
@@ -257,10 +262,6 @@ export default function Home() {
           onActiveChange={(active) => {
             setIsActive(active);
             updateURLParams(undefined, undefined, undefined, targetTime);
-          }}
-          onSetTargetTime={(newTargetTime) => {
-            setTargetTime(newTargetTime);
-            updateURLParams(undefined, undefined, undefined, newTargetTime);
           }}
         />
       </div>
