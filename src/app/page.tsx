@@ -19,39 +19,33 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FaExpand, FaCog } from 'react-icons/fa';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import CountdownTimer from '@/components/CountdownTimer';
+import TimerSync from '@/components/TimerSync';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useHashParams } from '@/lib/useHashParams';
 import { useSettings } from '@/context/SettingsContext';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  resetTimer, setInitialTime, setIsActive,
+  setRepeat, setSavedInitialTime, setTargetTime
+} from '@/store/timerSlice';
 
 export default function Home() {
-  const router = useRouter();
-  const hashParams = useHashParams();
+
   const isMobile = 'ontouchstart' in window || !!navigator.maxTouchPoints;
 
-  // Timer settings from URL parameters
-  const [initialTime, setInitialTime] = useState(60); // Default to 60 seconds
-  const [savedInitialTime, setSavedInitialTime] = useState(60); // For Reset functionality
-  const [repeat, setRepeat] = useState(false);
-  const [isActive, setIsActive] = useState(false); // Timer active state
-  const [resetFlag, setResetFlag] = useState(false); // Flag to trigger reset
-  const [targetTime, setTargetTime] = useState<number | null>(null);
-
-  const _setIsActive = ((val: boolean) => {
-    localStorage.setItem('active', val.toString());
-    setIsActive(val);
-  });
-
-  const _setRepeat = ((val: boolean) => {
-    localStorage.setItem('repeat', val.toString());
-    setRepeat(val);
-  });
+  const [timerKey, setTimerKey] = useState(0);
+  const dispatch = useAppDispatch();
+  const {
+    initialTime,
+    isActive,
+    repeat,
+    targetTime,
+  } = useAppSelector((state) => state.timer);
 
   // Load settings from context
   const {
@@ -59,80 +53,6 @@ export default function Home() {
     playEndSound,
     playLastTenSecondsSound,
   } = useSettings();
-
-  // Load timer settings from URL parameters whenever they change
-  useEffect(() => {
-    // Parse URL parameters using useSearchParams
-    const hoursParam = hashParams.get('hours') || localStorage.getItem('hours');
-    const minutesParam = hashParams.get('minutes') || localStorage.getItem('minutes');
-    const secondsParam = hashParams.get('seconds') || localStorage.getItem('seconds');
-    const repeatParam = hashParams.get('repeat') || localStorage.getItem('repeat');
-    const activeParam = hashParams.get('active') || localStorage.getItem('active');
-    const targetTimeParam = hashParams.get('targetTime') || localStorage.getItem('targetTime');
-
-    const hours = hoursParam ? parseInt(hoursParam) : 0;
-    const minutes = minutesParam ? parseInt(minutesParam) : 1; // Default to 1 minute
-    const seconds = secondsParam ? parseInt(secondsParam) : 0;
-
-    setRepeat(repeatParam === 'true');
-    setIsActive(activeParam === 'true');
-
-    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    setInitialTime(totalSeconds);
-    setSavedInitialTime(totalSeconds);
-
-    // Set targetTime from URL if available
-    if (targetTimeParam) {
-      const targetTimeFromURL = parseInt(targetTimeParam);
-      setTargetTime(targetTimeFromURL);
-    }
-    else {
-      setTargetTime(null);
-    }
-  }, [hashParams]);
-
-  // Update URL parameters when settings change
-  useEffect(() => {
-    updateURLParams(undefined, undefined, undefined, targetTime);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTime, repeat, isActive, targetTime]);
-
-  const updateURLParams = (
-    hours?: number,
-    minutes?: number,
-    seconds?: number,
-    targetTimeParam?: number | null
-  ) => {
-    const params = new URLSearchParams();
-
-    const totalSeconds =
-      hours !== undefined && minutes !== undefined && seconds !== undefined
-        ? hours * 3600 + minutes * 60 + seconds
-        : initialTime;
-
-    const currentHours = hours !== undefined ? hours : Math.floor(totalSeconds / 3600);
-    const currentMinutes =
-      minutes !== undefined ? minutes : Math.floor((totalSeconds % 3600) / 60);
-    const currentSeconds = seconds !== undefined ? seconds : totalSeconds % 60;
-
-    params.set('hours', currentHours.toString());
-    params.set('minutes', currentMinutes.toString());
-    params.set('seconds', currentSeconds.toString());
-    params.set('repeat', repeat.toString());
-    params.set('active', isActive.toString());
-
-    // Include targetTime in the URL if the timer is active
-    if (isActive && targetTimeParam) {
-      params.set('targetTime', targetTimeParam.toString());
-    }
-    else {
-      // Remove targetTime from URL if timer is not active
-      params.delete('targetTime');
-    }
-
-    const url = `${window.location.pathname}#${params.toString()}`;
-    router.replace(url);
-  };
 
   const toggleFullScreen = () => {
     if (document.fullscreenElement) {
@@ -145,33 +65,17 @@ export default function Home() {
 
   // Handlers for Start, Pause, Reset
   const handleStart = () => {
-    _setIsActive(true);
-    updateURLParams(undefined, undefined, undefined, targetTime);
+    dispatch(setIsActive(true));
   };
 
   const handlePause = () => {
-    _setIsActive(false);
-    updateURLParams(undefined, undefined, undefined, null);
+    dispatch(setIsActive(false));
   };
 
   const handleReset = () => {
-    _setIsActive(false);
-    setTargetTime(null);
-    // Reset to saved initial time
-    setInitialTime(savedInitialTime);
-    setResetFlag((prev) => !prev); // Toggle resetFlag to trigger reset
-    updateURLParams(undefined, undefined, undefined, null);
+    dispatch(resetTimer());
+    setTimerKey((prev) => prev + 1);
   };
-
-  const handleResetHandled = () => {
-    setResetFlag(false);
-  };
-
-  // Update repeat in URL when it changes
-  useEffect(() => {
-    updateURLParams(undefined, undefined, undefined, targetTime);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repeat]);
 
   // Build query parameters object to pass to Link components
   const queryParams = new URLSearchParams({
@@ -180,7 +84,6 @@ export default function Home() {
     seconds: (initialTime % 60).toString(),
     repeat: repeat.toString(),
     active: isActive.toString(),
-    // Include targetTime if the timer is active
     ...(isActive && targetTime !== null ? {targetTime: targetTime.toString()} : {}),
   });
 
@@ -197,9 +100,7 @@ export default function Home() {
         }
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       // Clean up the event listener on component unmount
       window.removeEventListener('keydown', handleKeyDown);
@@ -210,6 +111,7 @@ export default function Home() {
   return (
     <div id="home" className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="absolute top-4 right-4 flex space-x-4 items-center">
+
         {/* Fullscreen Button */}
         {!isMobile && (
           <button
@@ -221,19 +123,20 @@ export default function Home() {
             <span className="hidden sm:inline">Full Screen</span>
           </button>
         )}
+
         {/* Repeat Toggle */}
         <Label htmlFor="repeat"
                className="text-base text-flex items-center space-x-2">
           Repeat
         </Label>
         <Switch id="repeat"
-          checked={repeat}
-          onCheckedChange={(checked) => _setRepeat(checked)}
+                checked={repeat}
+                onCheckedChange={(checked) => dispatch(setRepeat(checked))}
         />
+
         {/* Settings Link */}
-        <Link
-          href={{ pathname: '/settings', hash: queryParams.toString() }}
-          passHref
+        <Link href={{pathname: '/settings', hash: queryParams.toString()}}
+              passHref
         >
           <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1">
             <FaCog size={24} />
@@ -243,25 +146,27 @@ export default function Home() {
       </div>
 
       {/* Timer Component */}
+      <TimerSync/>
       <div className="w-full max-w-screen-xl">
         <CountdownTimer
+          key={timerKey} // forces re-mount if timerKey changes
           initialTime={initialTime}
           repeat={repeat}
           countUp={countUp}
           playEndSound={playEndSound}
           playLastTenSecondsSound={playLastTenSecondsSound}
           isActive={isActive}
-          resetFlag={resetFlag}
-          onResetHandled={handleResetHandled}
+          targetTime={targetTime}
           onTimeUpdate={(hours, minutes, seconds) => {
             const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-            setInitialTime(totalSeconds);
-            setSavedInitialTime(totalSeconds); // Update saved initial time
-            updateURLParams(hours, minutes, seconds, targetTime);
+            dispatch(setInitialTime(totalSeconds));
+            dispatch(setSavedInitialTime(totalSeconds)); // Update saved initial time
+          }}
+          onSetTargetTime={(targetTime: number | null) => {
+            dispatch(setTargetTime(targetTime))
           }}
           onActiveChange={(active) => {
-            setIsActive(active);
-            updateURLParams(undefined, undefined, undefined, targetTime);
+            dispatch(setIsActive(active));
           }}
         />
       </div>

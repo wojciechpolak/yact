@@ -56,7 +56,7 @@ const SettingsPage = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Settings</h1>
           <Link
-            href={{ pathname: '/', hash: queryParams.toString() }}
+            href={{pathname: '/', hash: queryParams.toString()}}
             passHref
           >
             <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1 hover:scale-105">

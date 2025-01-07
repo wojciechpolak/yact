@@ -22,106 +22,102 @@
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseCountdownTimerOptions {
+  countUp: boolean;
   initialTime: number; // in seconds
   isActive: boolean; // from the parent
-  countUp: boolean;
-  repeat: boolean;
-  playEndSound: boolean;
-  playLastTenSecondsSound: boolean;
-  showNotifications: boolean;
-  resetFlag: boolean; // toggled from parent to force a reset
-  targetTime?: number | null; // optional
   onActiveChange: (active: boolean) => void; // parent can set isActive
-  onSetTargetTime?: (targetTime: number | null) => void; // optional
   onPlaySound: (url: string) => void;
   onSendNotification: () => void;
-  onResetHandled: () => void;
+  onSetTargetTime?: (targetTime: number | null) => void; // optional
+  playEndSound: boolean;
+  playLastTenSecondsSound: boolean;
+  repeat: boolean;
+  showNotifications: boolean;
+  targetTime?: number | null; // optional
 }
 
 export function useCountdownTimer({
+  countUp,
   initialTime,
   isActive,
-  countUp,
-  repeat,
-  playEndSound,
-  playLastTenSecondsSound,
-  showNotifications,
-  resetFlag,
   onActiveChange,
-  onSetTargetTime,
   onPlaySound,
   onSendNotification,
-  onResetHandled,
+  onSetTargetTime,
+  playEndSound,
+  playLastTenSecondsSound,
+  repeat,
+  showNotifications,
+  targetTime,
 }: UseCountdownTimerOptions) {
 
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isInitialTargetTimeUsed, setIsInitialTargetTimeUsed] = useState(false);
 
   /**
-   * 1) Handle resetFlag from parent:
-   *    - If it changes to true, do a full reset: timeLeft=initialTime, clear targetTime, pause.
-   *    - Then call `onResetHandled` so parent sets resetFlag=false.
-   */
-  useEffect(() => {
-    if (!resetFlag) return; // Only run when resetFlag becomes true
-
-    // Perform the reset
-    setTimeLeft(initialTime);
-    setTargetTimeState(null);
-    onActiveChange(false);  // Pause the timer if it's running
-
-    // Tell the parent: "Reset is handled, you can set resetFlag to false now!"
-    onResetHandled();
-
-  }, [resetFlag, initialTime, onActiveChange, onResetHandled]);
-
-  /**
-   * 2) Keep local timeLeft in sync if `initialTime` changes externally
+   * 1) Keep local timeLeft in sync if `initialTime` changes externally
    */
   useEffect(() => {
     setTimeLeft(initialTime);
   }, [initialTime]);
 
   /**
-   * 3) Start/Pause logic:
+   * 2) Start/Pause logic:
    *    - If isActive goes from false → true, recalc a fresh targetTime from current timeLeft
    *    - If isActive = false, nullify targetTime => "pause"
    */
   useEffect(() => {
-    if (isActive) {
-      // If timeLeft <= 0 and not counting up, reset to initialTime
-      let adjustedTime = timeLeft;
-      if (timeLeft <= 0 && !countUp) {
-        adjustedTime = initialTime;
-        setTimeLeft(adjustedTime);
-      }
+    if (!isActive) {
+      // Paused/stopped
+      setTargetTimeState(null);
+      return;
+    }
 
-      const now = Date.now();
-      // If we don't have a valid future targetTime, recalc it
-      // (this covers Start after Pause, or brand-new Start).
-      if (!targetTimeState || targetTimeState < now) {
-        const newTarget = now + adjustedTime * 1000;
-        setTargetTimeState(newTarget);
+    // If timeLeft <= 0 and not counting up, reset to initialTime
+    let adjustedTime = timeLeft;
+    if (timeLeft <= 0 && !countUp) {
+      adjustedTime = initialTime;
+      setTimeLeft(adjustedTime);
+    }
+
+    const now = Date.now();
+
+    // If the local `targetTimeState` is null, but we have a valid
+    // "targetTime" from the store that is still in the future,
+    // use that first:
+    if (!isInitialTargetTimeUsed && !targetTimeState &&
+      (targetTime && targetTime > now)) {
+      setTargetTimeState(targetTime);
+      setIsInitialTargetTimeUsed(true);
+      return;
+    }
+    setIsInitialTargetTimeUsed(true);
+
+    // If we don't have a valid future targetTime, recalc it
+    // (this covers Start after Pause, or brand-new Start).
+    if (!targetTimeState || targetTimeState < now) {
+      const newTarget = now + adjustedTime * 1000;
+      setTargetTimeState(newTarget);
+      if (timeLeft > 0) {
         onSetTargetTime?.(newTarget);
       }
     }
-    else {
-      // Paused/stopped
-      setTargetTimeState(null);
-    }
   }, [
-    isActive,
-    timeLeft,
-    initialTime,
     countUp,
-    targetTimeState,
+    initialTime,
+    isActive,
+    isInitialTargetTimeUsed,
     onActiveChange,
     onSetTargetTime,
+    targetTime,
+    targetTimeState,
+    timeLeft,
   ]);
 
   /**
-   * 4) The main interval:
+   * 3) The main interval:
    *    - If active + not editing + targetTimeState => tick each second
    */
   useEffect(() => {
@@ -171,19 +167,19 @@ export function useCountdownTimer({
 
     return () => clearInterval(timerId);
   }, [
+    countUp,
+    initialTime,
     isActive,
     isEditing,
-    targetTimeState,
-    initialTime,
-    repeat,
-    countUp,
-    playEndSound,
-    playLastTenSecondsSound,
-    showNotifications,
+    onActiveChange,
     onPlaySound,
     onSendNotification,
-    onActiveChange,
     onSetTargetTime,
+    playEndSound,
+    playLastTenSecondsSound,
+    repeat,
+    showNotifications,
+    targetTimeState,
   ]);
 
   // Editor open/close

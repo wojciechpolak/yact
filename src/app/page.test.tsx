@@ -19,6 +19,7 @@
 
 import { expect, test, vi } from 'vitest';
 import { render } from '@testing-library/react';
+import { StoreProvider } from '@/context/StoreProvider';
 import Page from './page';
 
 vi.mock('next/navigation', () => ({
@@ -49,6 +50,10 @@ vi.mock('@/context/SettingsContext', () => ({
 }));
 
 test('Page', () => {
-  const result = render(<Page />);
+  const result = render(
+    <StoreProvider>
+      <Page />
+    </StoreProvider>
+  );
   expect(result.container.querySelector('#home')).not.toBeNull();
 })

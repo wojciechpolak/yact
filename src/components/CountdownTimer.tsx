@@ -20,35 +20,35 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSettings } from '@/context/SettingsContext';
 import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
+import { useSettings } from '@/context/SettingsContext';
 import TimerEditorModal from '@/components/TimerEditorModal';
 
 interface CountdownTimerProps {
-  initialTime: number;
-  repeat: boolean;
   countUp: boolean;
+  initialTime: number;
+  isActive: boolean; // parent sets or toggles
+  onActiveChange: (active: boolean) => void;
+  onSetTargetTime: (targetTime: number | null) => void;
+  onTimeUpdate?: (h: number, m: number, s: number) => void; // called on manual edit
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
-  isActive: boolean;    // parent sets or toggles
-  resetFlag: boolean;   // parent toggles for reset
-  onResetHandled: () => void; // parent sets resetFlag back to false
-  onTimeUpdate?: (h: number, m: number, s: number) => void; // Called on manual edit
-  onActiveChange: (active: boolean) => void;
+  repeat: boolean;
+  targetTime: number | null;
 }
 
 export default function CountdownTimer({
-  initialTime,
-  repeat,
   countUp,
+  initialTime,
+  isActive,
+  onActiveChange,
+  onSetTargetTime,
+  onTimeUpdate,
   playEndSound,
   playLastTenSecondsSound,
-  isActive,
-  resetFlag,
-  onResetHandled,
-  onTimeUpdate,
-  onActiveChange,
+  repeat,
+  targetTime,
 }: CountdownTimerProps) {
 
   const { showNotifications } = useSettings();
@@ -113,18 +113,18 @@ export default function CountdownTimer({
     m,
     s,
   } = useCountdownTimer({
+    countUp,
     initialTime,
     isActive,
-    countUp,
-    repeat,
-    playEndSound,
-    playLastTenSecondsSound,
-    showNotifications,
-    resetFlag,
     onActiveChange,
     onPlaySound: playSound,
     onSendNotification: sendNotification,
-    onResetHandled,
+    onSetTargetTime,
+    playEndSound,
+    playLastTenSecondsSound,
+    repeat,
+    showNotifications,
+    targetTime,
   });
 
   // Update the document title with the timer
