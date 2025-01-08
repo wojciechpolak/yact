@@ -20,6 +20,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 import { FaArrowLeft } from 'react-icons/fa';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -28,6 +29,7 @@ import { useSettings } from '@/context/SettingsContext';
 
 const SettingsPage = () => {
   const hashParams = useHashParams();
+  const {theme, setTheme} = useTheme();
 
   // Use settings from context
   const {
@@ -72,8 +74,8 @@ const SettingsPage = () => {
               Count up when timer ends
             </Label>
             <Switch id="countUp"
-              checked={countUp}
-              onCheckedChange={(checked) => setCountUp(checked)}
+                    checked={countUp}
+                    onCheckedChange={(checked) => setCountUp(checked)}
             />
           </div>
 
@@ -83,8 +85,8 @@ const SettingsPage = () => {
               Show notifications when timer ends
             </Label>
             <Switch id="showNotifications"
-              checked={showNotifications}
-              onCheckedChange={(checked) => setShowNotifications(checked)}
+                    checked={showNotifications}
+                    onCheckedChange={(checked) => setShowNotifications(checked)}
             />
           </div>
 
@@ -94,8 +96,8 @@ const SettingsPage = () => {
               Play sound when timer ends
             </Label>
             <Switch id="playEndSound"
-              checked={playEndSound}
-              onCheckedChange={(checked) => setPlayEndSound(checked)}
+                    checked={playEndSound}
+                    onCheckedChange={(checked) => setPlayEndSound(checked)}
             />
           </div>
 
@@ -107,6 +109,28 @@ const SettingsPage = () => {
             <Switch id="playLastTenSecondsSound"
                     checked={playLastTenSecondsSound}
                     onCheckedChange={(checked) => setPlayLastTenSecondsSound(checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="system-theme"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Use system theme
+            </Label>
+            <Switch id="system-theme"
+                    checked={theme === 'system'}
+                    onCheckedChange={(checked) => setTheme(checked ? 'system' : 'light')}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="theme"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Use dark theme
+            </Label>
+            <Switch id="theme"
+                    checked={theme === 'dark'}
+                    onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
             />
           </div>
         </div>
