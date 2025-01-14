@@ -19,7 +19,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useSettings } from '@/context/SettingsContext';
@@ -51,7 +51,7 @@ export default function CountdownTimer({
   targetTime,
 }: CountdownTimerProps) {
 
-  const { showNotifications } = useSettings();
+  const { showNotifications, updateTitle } = useSettings();
 
   // Audio manager
   const {
@@ -127,14 +127,21 @@ export default function CountdownTimer({
     targetTime,
   });
 
+  const [ariaTimer, setAriaTimer] = useState('');
+
   // Update the document title with the timer
   useEffect(() => {
     const sign = timeLeft < 0 ? '+' : '';
     const fmt = (val: number) => val.toString().padStart(2, '0');
     const formattedTime =
       h === 0 ? `${sign}${fmt(m)}:${fmt(s)}` : `${sign}${h}:${fmt(m)}:${fmt(s)}`;
-    document.title = `${formattedTime} Countdown | YACT`;
-  }, [timeLeft, h, m, s]);
+    if (updateTitle) {
+      document.title = `${formattedTime} Countdown | YACT`;
+    }
+    if (s % 5 === 0) {
+      setAriaTimer(formattedTime);
+    }
+  }, [updateTitle, timeLeft, h, m, s]);
 
   // Handle manual editor saving
   const handleSaveEditor = (hours: number, minutes: number, seconds: number) => {
@@ -160,11 +167,22 @@ export default function CountdownTimer({
       {/* Timer Display */}
       <div
         className="text-[15vw] font-mono cursor-pointer select-none text-center leading-none"
+        role="timer"
+        tabIndex={0}
+        aria-label={`Countdown Timer: ${h} hours, ${m} minutes, ${s} seconds`}
         onClick={openEditor}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openEditor();
+          }
+        }}
       >
         {timeLeft < 0 && '+'}
         {fmt(h)}:{fmt(m)}:{fmt(s)}
       </div>
+
+      <div id="screen-reader-update" aria-live="polite">{ariaTimer}</div>
 
       <TimerEditorModal
         isOpen={isEditing}

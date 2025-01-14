@@ -98,3 +98,8 @@ body {
     -moz-appearance: textfield !important;
   }
 }
+
+#screen-reader-update {
+  position: absolute;
+  left: -9999px;
+}

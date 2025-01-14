@@ -26,6 +26,7 @@ interface Settings {
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
   showNotifications: boolean;
+  updateTitle: boolean;
 }
 
 interface SettingsContextProps extends Settings {
@@ -33,6 +34,7 @@ interface SettingsContextProps extends Settings {
   setPlayEndSound: (value: boolean) => void;
   setPlayLastTenSecondsSound: (value: boolean) => void;
   setShowNotifications: (value: boolean) => void;
+  setUpdateTitle: (value: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextProps | undefined>(undefined);
@@ -46,18 +48,21 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const savedPlayEndSound = localStorage.getItem('playEndSound');
     const savedPlayLastTenSecondsSound = localStorage.getItem('playLastTenSecondsSound');
     const savedShowNotifications = localStorage.getItem('showNotifications');
+    const savedUpdateTitle = localStorage.getItem('updateTitle');
 
     const countUp = savedCountUp !== null ? savedCountUp === 'true' : true;
     const playEndSound = savedPlayEndSound !== null ? savedPlayEndSound === 'true' : true;
     const playLastTenSecondsSound =
       savedPlayLastTenSecondsSound !== null ? savedPlayLastTenSecondsSound === 'true' : true;
     const showNotifications = savedShowNotifications !== null ? savedShowNotifications === 'true' : false;
+    const updateTitle = savedUpdateTitle !== null ? savedUpdateTitle === 'true' : true;
 
     setSettings({
       countUp,
       playEndSound,
       playLastTenSecondsSound,
       showNotifications,
+      updateTitle,
     });
   }, []);
 
@@ -68,6 +73,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('playEndSound', settings.playEndSound.toString());
       localStorage.setItem('playLastTenSecondsSound', settings.playLastTenSecondsSound.toString());
       localStorage.setItem('showNotifications', settings.showNotifications.toString());
+      localStorage.setItem('updateTitle', settings.updateTitle.toString());
     }
   }, [settings]);
 
@@ -81,6 +87,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const setPlayLastTenSecondsSound = (value: boolean) =>
     setSettings({ ...settings, playLastTenSecondsSound: value });
   const setShowNotifications = (value: boolean) => setSettings({ ...settings, showNotifications: value });
+  const setUpdateTitle = (value: boolean) => setSettings({ ...settings, updateTitle: value });
 
   return (
     <SettingsContext.Provider
@@ -90,6 +97,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         setPlayEndSound,
         setPlayLastTenSecondsSound,
         setShowNotifications,
+        setUpdateTitle,
       }}
     >
       {children}

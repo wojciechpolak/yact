@@ -119,7 +119,7 @@ export default function Home() {
             title="Full Screen"
             className="flex items-center space-x-1 hover:scale-105"
           >
-            <FaExpand size={24} />
+            <FaExpand size={24} aria-hidden="true"/>
             <span className="hidden sm:inline">Full Screen</span>
           </button>
         )}
@@ -130,16 +130,18 @@ export default function Home() {
           Repeat
         </Label>
         <Switch id="repeat"
+                aria-label="Repeat"
                 checked={repeat}
                 onCheckedChange={(checked) => dispatch(setRepeat(checked))}
         />
 
         {/* Settings Link */}
         <Link href={{pathname: '/settings', hash: queryParams.toString()}}
+              accessKey=","
               passHref
         >
           <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1">
-            <FaCog size={24} />
+            <FaCog size={24} aria-hidden="true"/>
             <span className="hidden sm:inline">Settings</span>
           </span>
         </Link>

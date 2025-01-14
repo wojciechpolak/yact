@@ -41,6 +41,8 @@ const SettingsPage = () => {
     setPlayLastTenSecondsSound,
     showNotifications,
     setShowNotifications,
+    updateTitle,
+    setUpdateTitle,
   } = useSettings();
 
   // Build query parameters object to pass back to the main page
@@ -109,6 +111,17 @@ const SettingsPage = () => {
             <Switch id="playLastTenSecondsSound"
                     checked={playLastTenSecondsSound}
                     onCheckedChange={(checked) => setPlayLastTenSecondsSound(checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="updateTitle"
+                   className="text-xl relative inline-flex items-center cursor-pointer">
+              Update title
+            </Label>
+            <Switch id="updateTitle"
+                    checked={updateTitle}
+                    onCheckedChange={(checked) => setUpdateTitle(checked)}
             />
           </div>
 

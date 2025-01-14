@@ -68,6 +68,7 @@ export default function TimerEditorModal({
           <h2 className="text-3xl">Set Timer</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-gray-500 hover:text-gray-600 hover:scale-110 text-3xl"
           >
             ✕
