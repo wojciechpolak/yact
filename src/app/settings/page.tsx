@@ -56,7 +56,7 @@ const SettingsPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-6 rounded-lg shadow">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Settings</h1>
           <Link

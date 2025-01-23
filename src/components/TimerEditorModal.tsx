@@ -62,7 +62,7 @@ export default function TimerEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-3xl w-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-3xl">Set Timer</h2>

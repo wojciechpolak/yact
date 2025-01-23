@@ -149,7 +149,7 @@ export default function Home() {
 
       {/* Timer Component */}
       <TimerSync/>
-      <div className="w-full max-w-screen-xl">
+      <div className="w-full max-w-(--breakpoint-xl)">
         <CountdownTimer
           key={timerKey} // forces re-mount if timerKey changes
           initialTime={initialTime}
