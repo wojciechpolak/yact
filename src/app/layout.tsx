@@ -18,7 +18,7 @@
  */
 
 import type { ReactNode } from 'react';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { StoreProvider } from '@/context/StoreProvider';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -33,6 +33,13 @@ export const metadata: Metadata = {
   title: 'YACT',
   description: 'Yet Another Countdown Timer',
 };
+
+export const viewport: Viewport = {
+  themeColor: [
+    {media: '(prefers-color-scheme: light)', color: '#ffffff'},
+    {media: '(prefers-color-scheme: dark)', color: '#020817'},
+  ],
+}
 
 export default function RootLayout({children}: Props) {
   return (
