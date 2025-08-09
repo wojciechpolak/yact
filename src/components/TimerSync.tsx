@@ -23,6 +23,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useHashParams } from '@/lib/useHashParams';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { useSettings } from '@/context/SettingsContext';
 import {
   setInitialTime,
   setIsActive,
@@ -41,6 +42,7 @@ export default function TimerSync() {
   const router = useRouter();
   const hashParams = useHashParams();
   const dispatch = useAppDispatch();
+  const { countToTime, setCountToTime } = useSettings();
   const {
     initialTime,
     isActive,
@@ -66,6 +68,7 @@ export default function TimerSync() {
     const repeatParam = hashParams.get('repeat') || localStorage.getItem('repeat');
     const activeParam = hashParams.get('active') || localStorage.getItem('active');
     const targetTimeParam = hashParams.get('targetTime') || localStorage.getItem('targetTime');
+    const modeParam = hashParams.get('mode');
 
     const hours = hoursParam ? parseInt(hoursParam, 10) : 0;
     const minutes = minutesParam ? parseInt(minutesParam, 10) : 1;
@@ -84,7 +87,18 @@ export default function TimerSync() {
     else {
       dispatch(setTargetTime(null));
     }
-  }, [dispatch, hashParams]);
+
+    // Apply mode to settings context
+    if (modeParam === 'target') {
+      setCountToTime(true);
+    }
+    else if (modeParam === null) {
+      const saved = localStorage.getItem('countToTime');
+      if (saved !== null) {
+        setCountToTime(saved === 'true');
+      }
+    }
+  }, [dispatch, hashParams, setCountToTime]);
 
   // watch relevant fields in the Redux store, update URL & localStorage
   useEffect(() => {
@@ -105,6 +119,7 @@ export default function TimerSync() {
     else {
       localStorage.removeItem('targetTime');
     }
+    localStorage.setItem('countToTime', countToTime.toString());
 
     const params = new URLSearchParams();
     params.set('hours', hours.toString());
@@ -115,12 +130,15 @@ export default function TimerSync() {
     if (isActive && targetTime) {
       params.set('targetTime', targetTime.toString());
     }
+    if (countToTime) {
+      params.set('mode', 'target');
+    }
 
     const newHash = params.toString();
     const newUrl = `${window.location.pathname}#${newHash}`;
 
     router.replace(newUrl);
-  }, [router, initialTime, savedInitialTime, isActive, repeat, targetTime]);
+  }, [router, initialTime, savedInitialTime, isActive, repeat, targetTime, countToTime]);
 
   return null; // This component doesn't render anything
 }

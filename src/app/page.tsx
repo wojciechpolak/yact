@@ -50,6 +50,7 @@ export default function Home() {
   // Load settings from context
   const {
     countUp,
+    countToTime,
     playEndSound,
     playLastTenSecondsSound,
   } = useSettings();
@@ -153,6 +154,7 @@ export default function Home() {
         <CountdownTimer
           key={timerKey} // forces re-mount if timerKey changes
           initialTime={initialTime}
+          countToTime={countToTime}
           repeat={repeat}
           countUp={countUp}
           playEndSound={playEndSound}

@@ -13,6 +13,8 @@ scratch with Next.js, React, and Tailwind CSS.
 
 - Customizable Timer: Set hours, minutes, and seconds to create a
   timer that fits your needs.
+- Two Modes: Choose between a fixed duration countdown or a target
+  time mode that counts down to a specific clock time (e.g., 16:00:00).
 - Repeat Functionality: Option to automatically repeat the timer when
   it reaches zero.
 - Count Up After Timer Ends: Choose to have the timer count upwards

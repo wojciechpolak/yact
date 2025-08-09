@@ -39,10 +39,13 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/context/SettingsContext', () => ({
   useSettings: () => ({
     countUp: true,
+    countToTime: false,
     playEndSound: true,
     playLastTenSecondsSound: true,
     showNotifications: false,
+    updateTitle: false,
     setCountUp: vi.fn(),
+    setCountToTime: vi.fn(),
     setPlayEndSound: vi.fn(),
     setPlayLastTenSecondsSound: vi.fn(),
     setShowNotifications: vi.fn(),

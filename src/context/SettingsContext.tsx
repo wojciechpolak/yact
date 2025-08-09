@@ -23,6 +23,9 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 interface Settings {
   countUp: boolean;
+  // When true, the timer counts down to a specific time of day (HH:MM:SS)
+  // rather than for a fixed duration.
+  countToTime: boolean;
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
   showNotifications: boolean;
@@ -31,6 +34,7 @@ interface Settings {
 
 interface SettingsContextProps extends Settings {
   setCountUp: (value: boolean) => void;
+  setCountToTime: (value: boolean) => void;
   setPlayEndSound: (value: boolean) => void;
   setPlayLastTenSecondsSound: (value: boolean) => void;
   setShowNotifications: (value: boolean) => void;
@@ -45,12 +49,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Load settings from localStorage
     const savedCountUp = localStorage.getItem('countUp');
+    const savedCountToTime = localStorage.getItem('countToTime');
     const savedPlayEndSound = localStorage.getItem('playEndSound');
     const savedPlayLastTenSecondsSound = localStorage.getItem('playLastTenSecondsSound');
     const savedShowNotifications = localStorage.getItem('showNotifications');
     const savedUpdateTitle = localStorage.getItem('updateTitle');
 
     const countUp = savedCountUp !== null ? savedCountUp === 'true' : true;
+    const countToTime = savedCountToTime !== null ? savedCountToTime === 'true' : false;
     const playEndSound = savedPlayEndSound !== null ? savedPlayEndSound === 'true' : true;
     const playLastTenSecondsSound =
       savedPlayLastTenSecondsSound !== null ? savedPlayLastTenSecondsSound === 'true' : true;
@@ -59,6 +65,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
     setSettings({
       countUp,
+      countToTime,
       playEndSound,
       playLastTenSecondsSound,
       showNotifications,
@@ -70,6 +77,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     // Save settings to localStorage whenever they change
     if (settings) {
       localStorage.setItem('countUp', settings.countUp.toString());
+      localStorage.setItem('countToTime', settings.countToTime.toString());
       localStorage.setItem('playEndSound', settings.playEndSound.toString());
       localStorage.setItem('playLastTenSecondsSound', settings.playLastTenSecondsSound.toString());
       localStorage.setItem('showNotifications', settings.showNotifications.toString());
@@ -84,6 +92,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const setCountUp = (value: boolean) => setSettings({ ...settings, countUp: value });
   const setPlayEndSound = (value: boolean) => setSettings({ ...settings, playEndSound: value });
+  const setCountToTime = (value: boolean) => setSettings({ ...settings, countToTime: value });
   const setPlayLastTenSecondsSound = (value: boolean) =>
     setSettings({ ...settings, playLastTenSecondsSound: value });
   const setShowNotifications = (value: boolean) => setSettings({ ...settings, showNotifications: value });
@@ -94,6 +103,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       value={{
         ...settings,
         setCountUp,
+        setCountToTime,
         setPlayEndSound,
         setPlayLastTenSecondsSound,
         setShowNotifications,

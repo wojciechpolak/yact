@@ -35,6 +35,7 @@ const SettingsPage = () => {
   const {
     countUp,
     setCountUp,
+    countToTime,
     playEndSound,
     setPlayEndSound,
     playLastTenSecondsSound,
@@ -53,6 +54,9 @@ const SettingsPage = () => {
     repeat: hashParams.get('repeat') || localStorage.getItem('repeat') || 'false',
     active: hashParams.get('active') || localStorage.getItem('active') || 'false',
   });
+  if (countToTime) {
+    queryParams.set('mode', 'target');
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">

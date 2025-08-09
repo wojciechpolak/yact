@@ -23,6 +23,9 @@ import { useState, useEffect, useCallback } from 'react';
 
 interface UseCountdownTimerOptions {
   countUp: boolean;
+  // If true, interpret initialTime as time-of-day (HH:MM:SS) seconds since midnight
+  // and count down to the next occurrence of that clock time.
+  countToTime: boolean;
   initialTime: number; // in seconds
   isActive: boolean; // from the parent
   onActiveChange: (active: boolean) => void; // parent can set isActive
@@ -38,6 +41,7 @@ interface UseCountdownTimerOptions {
 
 export function useCountdownTimer({
   countUp,
+  countToTime,
   initialTime,
   isActive,
   onActiveChange,
@@ -56,12 +60,34 @@ export function useCountdownTimer({
   const [isEditing, setIsEditing] = useState(false);
   const [isInitialTargetTimeUsed, setIsInitialTargetTimeUsed] = useState(false);
 
-  /**
-   * 1) Keep local timeLeft in sync if `initialTime` changes externally
-   */
+  // Helper to compute the next target timestamp from a time-of-day in seconds
+  const computeNextClockTarget = useCallback((secondsSinceMidnight: number) => {
+    const now = new Date();
+    const hours = Math.floor(secondsSinceMidnight / 3600);
+    const minutes = Math.floor((secondsSinceMidnight % 3600) / 60);
+    const seconds = secondsSinceMidnight % 60;
+
+    const target = new Date(now);
+    target.setHours(hours, minutes, seconds, 0);
+    if (target.getTime() <= now.getTime()) {
+      // target already passed today -> use tomorrow
+      target.setDate(target.getDate() + 1);
+    }
+    return target.getTime();
+  }, []);
+
+  // 1) Keep local timeLeft in sync if `initialTime` changes externally
   useEffect(() => {
-    setTimeLeft(initialTime);
-  }, [initialTime]);
+    if (countToTime) {
+      const nextTarget = computeNextClockTarget(initialTime);
+      const now = Date.now();
+      const diff = Math.max(0, Math.round((nextTarget - now) / 1000));
+      setTimeLeft(diff);
+    }
+    else {
+      setTimeLeft(initialTime);
+    }
+  }, [computeNextClockTarget, countToTime, initialTime]);
 
   /**
    * 2) Start/Pause logic:
@@ -73,13 +99,6 @@ export function useCountdownTimer({
       // Paused/stopped
       setTargetTimeState(null);
       return;
-    }
-
-    // If timeLeft <= 0 and not counting up, reset to initialTime
-    let adjustedTime = timeLeft;
-    if (timeLeft <= 0 && !countUp) {
-      adjustedTime = initialTime;
-      setTimeLeft(adjustedTime);
     }
 
     const now = Date.now();
@@ -98,19 +117,41 @@ export function useCountdownTimer({
     // If we don't have a valid future targetTime, recalc it
     // (this covers Start after Pause, or brand-new Start).
     if (!targetTimeState || targetTimeState < now) {
-      const newTarget = now + adjustedTime * 1000;
-      setTargetTimeState(newTarget);
-      if (timeLeft > 0) {
-        onSetTargetTime?.(newTarget);
+      if (countToTime) {
+        // In target-time mode:
+        // - If counting up and not repeating and we've already passed the target (timeLeft <= 0),
+        //   set a past target so we keep counting up after resume.
+        // - Otherwise, compute the next occurrence of the desired clock time.
+        if (countUp && !repeat && timeLeft <= 0) {
+          const pastTarget = now + timeLeft * 1000; // timeLeft is negative
+          setTargetTimeState(pastTarget);
+          // Do not persist past targets to store/url
+        }
+        else {
+          const newTarget = computeNextClockTarget(initialTime);
+          setTargetTimeState(newTarget);
+          onSetTargetTime?.(newTarget);
+        }
+      }
+      else {
+        const adjustedTime = timeLeft <= 0 && !countUp ? initialTime : timeLeft;
+        const newTarget = now + adjustedTime * 1000;
+        setTargetTimeState(newTarget);
+        if (timeLeft > 0) {
+          onSetTargetTime?.(newTarget);
+        }
       }
     }
   }, [
     countUp,
+    countToTime,
+    computeNextClockTarget,
     initialTime,
     isActive,
     isInitialTargetTimeUsed,
     onActiveChange,
     onSetTargetTime,
+    repeat,
     targetTime,
     targetTimeState,
     timeLeft,
@@ -140,11 +181,21 @@ export function useCountdownTimer({
         }
 
         if (repeat) {
-          // Reset to initialTime
-          const nextTarget = now + initialTime * 1000;
-          setTargetTimeState(nextTarget);
-          onSetTargetTime?.(nextTarget);
-          newTimeLeft = initialTime;
+          // Repeat behavior differs by mode
+          if (countToTime) {
+            const dayMs = 24 * 60 * 60 * 1000;
+            const nextTarget = targetTimeState + dayMs;
+            setTargetTimeState(nextTarget);
+            onSetTargetTime?.(nextTarget);
+            newTimeLeft = Math.round((nextTarget - now) / 1000);
+          }
+          else {
+            // Reset to the initial duration
+            const nextTarget = now + initialTime * 1000;
+            setTargetTimeState(nextTarget);
+            onSetTargetTime?.(nextTarget);
+            newTimeLeft = initialTime;
+          }
         }
         else if (countUp) {
           // keep going negative
@@ -168,6 +219,7 @@ export function useCountdownTimer({
     return () => clearInterval(timerId);
   }, [
     countUp,
+    countToTime,
     initialTime,
     isActive,
     isEditing,

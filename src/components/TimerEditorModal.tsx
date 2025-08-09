@@ -21,12 +21,14 @@
 
 import { useEffect, useState } from 'react';
 import { FaPlus, FaMinus } from 'react-icons/fa';
+import { Switch } from '@/components/ui/switch';
+import { useSettings } from '@/context/SettingsContext';
 
 interface TimerEditorModalProps {
   isOpen: boolean;
-  hours: number;
-  minutes: number;
-  seconds: number;
+  hours: number; // For duration mode: duration HH; for clock mode: HH target
+  minutes: number; // For duration mode: duration MM; for clock mode: MM target
+  seconds: number; // For duration mode: duration SS; for clock mode: SS target
   onClose: () => void;
   onSave: (hours: number, minutes: number, seconds: number) => void;
 }
@@ -39,6 +41,8 @@ export default function TimerEditorModal({
   onClose,
   onSave,
 }: TimerEditorModalProps) {
+
+  const { countToTime, setCountToTime } = useSettings();
 
   const [localHours, setLocalHours] = useState(hours);
   const [localMinutes, setLocalMinutes] = useState(minutes);
@@ -65,7 +69,7 @@ export default function TimerEditorModal({
     <div className="fixed inset-0 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg max-w-3xl w-full">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-3xl">Set Timer</h2>
+          <h2 className="text-3xl">Set Time</h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -73,6 +77,18 @@ export default function TimerEditorModal({
           >
             ✕
           </button>
+        </div>
+        {/* Mode Toggle */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center space-x-3">
+            <span className="text-sm text-gray-500">Fixed duration</span>
+            <Switch id="mode"
+                    aria-label="Toggle target time mode"
+                    checked={countToTime}
+                    onCheckedChange={(checked) => setCountToTime(checked)}
+            />
+            <span className="text-sm text-gray-500">Target time</span>
+          </div>
         </div>
         {/* Time Editing Controls */}
         <div className="flex space-x-8 mb-8 justify-center">

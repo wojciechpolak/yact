@@ -19,7 +19,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useSettings } from '@/context/SettingsContext';
@@ -27,6 +27,7 @@ import TimerEditorModal from '@/components/TimerEditorModal';
 
 interface CountdownTimerProps {
   countUp: boolean;
+  countToTime: boolean;
   initialTime: number;
   isActive: boolean; // parent sets or toggles
   onActiveChange: (active: boolean) => void;
@@ -40,6 +41,7 @@ interface CountdownTimerProps {
 
 export default function CountdownTimer({
   countUp,
+  countToTime,
   initialTime,
   isActive,
   onActiveChange,
@@ -114,6 +116,7 @@ export default function CountdownTimer({
     s,
   } = useCountdownTimer({
     countUp,
+    countToTime,
     initialTime,
     isActive,
     onActiveChange,
@@ -134,7 +137,7 @@ export default function CountdownTimer({
     const sign = timeLeft < 0 ? '+' : '';
     const fmt = (val: number) => val.toString().padStart(2, '0');
     const formattedTime =
-      h === 0 ? `${sign}${fmt(m)}:${fmt(s)}` : `${sign}${h}:${fmt(m)}:${fmt(s)}`;
+      h === 0 ? `${sign}${fmt(m)}:${fmt(s)}` : `${sign}${fmt(h)}:${fmt(m)}:${fmt(s)}`;
     if (updateTitle) {
       document.title = `${formattedTime} Countdown | YACT`;
     }
@@ -154,13 +157,43 @@ export default function CountdownTimer({
     localStorage.setItem('seconds', ss.toString());
 
     const totalSeconds = hh * 3600 + mm * 60 + ss;
-    setTimeLeft(totalSeconds);
+    if (countToTime) {
+      const now = new Date();
+      const target = new Date(now);
+      target.setHours(hh, mm, ss, 0);
+      if (target.getTime() <= now.getTime()) {
+        target.setDate(target.getDate() + 1);
+      }
+      const diffSeconds = Math.max(0, Math.round((target.getTime() - now.getTime()) / 1000));
+      setTimeLeft(diffSeconds);
+    }
+    else {
+      setTimeLeft(totalSeconds);
+    }
 
     closeEditor();
     onTimeUpdate?.(hh, mm, ss);
   };
 
   const fmt = (val: number) => val.toString().padStart(2, '0');
+
+  // Determine what values the editor should show when opened.
+  // - In fixed duration mode: show the current duration (h/m/s from timeLeft)
+  // - In target time mode: show the selected clock time (from targetTime if available,
+  //   otherwise from the initialTime seconds-since-midnight)
+  const editorTime = useMemo(() => {
+    if (countToTime) {
+      if (targetTime) {
+        const d = new Date(targetTime);
+        return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
+      }
+      const hh = Math.floor(initialTime / 3600);
+      const mm = Math.floor((initialTime % 3600) / 60);
+      const ss = initialTime % 60;
+      return { h: hh, m: mm, s: ss };
+    }
+    return { h, m, s };
+  }, [countToTime, targetTime, initialTime, h, m, s]);
 
   return (
     <div className="flex flex-col items-center">
@@ -186,9 +219,9 @@ export default function CountdownTimer({
 
       <TimerEditorModal
         isOpen={isEditing}
-        hours={h}
-        minutes={m}
-        seconds={s}
+        hours={editorTime.h}
+        minutes={editorTime.m}
+        seconds={editorTime.s}
         onClose={closeEditor}
         onSave={handleSaveEditor}
       />
