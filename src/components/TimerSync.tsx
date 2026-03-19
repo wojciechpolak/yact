@@ -20,7 +20,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useHashParams } from '@/lib/useHashParams';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { useSettings } from '@/context/SettingsContext';
@@ -38,7 +37,6 @@ import {
  *  - On store changes, update URL hash & localStorage
  */
 export default function TimerSync() {
-  const router = useRouter();
   const hashParams = useHashParams();
   const dispatch = useAppDispatch();
   const { countToTime, setCountToTime } = useSettings();
@@ -127,10 +125,10 @@ export default function TimerSync() {
     }
 
     const newHash = params.toString();
-    const newUrl = `${window.location.pathname}#${newHash}`;
+    const newUrl = `${window.location.pathname}${window.location.search}#${newHash}`;
 
-    router.replace(newUrl);
-  }, [router, initialTime, savedInitialTime, isActive, repeat, targetTime, countToTime]);
+    window.history.replaceState(null, '', newUrl);
+  }, [initialTime, savedInitialTime, isActive, repeat, targetTime, countToTime]);
 
   return null; // This component doesn't render anything
 }

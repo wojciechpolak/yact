@@ -22,6 +22,7 @@ import type { Metadata, Viewport } from 'next';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { StoreProvider } from '@/context/StoreProvider';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SerwistProvider } from '@/app/serwist';
 import Footer from '@/components/Footer';
 import './globals.css';
 
@@ -48,8 +49,10 @@ export default function RootLayout({ children }: Props) {
         <ThemeProvider attribute="class">
           <StoreProvider>
             <SettingsProvider>
-              {children}
-              <Footer />
+              <SerwistProvider swUrl="/sw.js" disable={process.env.NODE_ENV === 'development'}>
+                {children}
+                <Footer />
+              </SerwistProvider>
             </SettingsProvider>
           </StoreProvider>
         </ThemeProvider>

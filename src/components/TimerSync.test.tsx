@@ -28,7 +28,6 @@ const state = vi.hoisted(() => ({
   hashParams: new URLSearchParams(),
   countToTime: false,
   setCountToTime: vi.fn(),
-  replace: vi.fn(),
 }));
 
 const storage = new Map<string, string>();
@@ -58,12 +57,6 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
 });
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    replace: state.replace,
-  }),
-}));
-
 vi.mock('@/lib/useHashParams', () => ({
   useHashParams: () => state.hashParams,
 }));
@@ -92,12 +85,12 @@ afterEach(() => {
   localStorage.clear();
   state.hashParams = new URLSearchParams();
   state.countToTime = false;
-  state.replace.mockClear();
   state.setCountToTime.mockClear();
   cleanup();
 });
 
 test('TimerSync hydrates the store from hash parameters', async () => {
+  const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
   state.hashParams = new URLSearchParams(
     'hours=1&minutes=2&seconds=3&repeat=true&active=true&targetTime=12345&mode=target',
   );
@@ -118,13 +111,15 @@ test('TimerSync hydrates the store from hash parameters', async () => {
   expect(localStorage.getItem('hours')).toBe('1');
   expect(localStorage.getItem('minutes')).toBe('2');
   expect(localStorage.getItem('seconds')).toBe('3');
-  expect(state.replace).toHaveBeenNthCalledWith(
-    2,
+  expect(replaceStateSpy).toHaveBeenCalledWith(
+    null,
+    '',
     '/#hours=1&minutes=2&seconds=3&repeat=true&active=true&targetTime=12345',
   );
 });
 
 test('TimerSync falls back to localStorage when the hash is empty', async () => {
+  const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
   localStorage.setItem('hours', '4');
   localStorage.setItem('minutes', '5');
   localStorage.setItem('seconds', '6');
@@ -139,26 +134,31 @@ test('TimerSync falls back to localStorage when the hash is empty', async () => 
   });
 
   expect(state.setCountToTime).toHaveBeenCalledWith(true);
-  expect(state.replace).toHaveBeenCalledWith(
+  expect(replaceStateSpy).toHaveBeenCalledWith(
+    null,
+    '',
     '/#hours=4&minutes=5&seconds=6&repeat=true&active=false',
   );
 });
 
 test('TimerSync mirrors store updates into localStorage and the URL hash', async () => {
+  const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
   const { store } = renderTimerSync();
 
   await waitFor(() => {
-    expect(state.replace).toHaveBeenCalled();
+    expect(replaceStateSpy).toHaveBeenCalled();
   });
 
-  state.replace.mockClear();
+  replaceStateSpy.mockClear();
 
   store.dispatch(setInitialTime(3723));
   store.dispatch(setIsActive(true));
   store.dispatch(setTargetTime(999));
 
   await waitFor(() => {
-    expect(state.replace).toHaveBeenCalledWith(
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      null,
+      '',
       '/#hours=1&minutes=2&seconds=3&repeat=false&active=true&targetTime=999',
     );
   });
