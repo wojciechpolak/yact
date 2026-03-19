@@ -49,7 +49,9 @@ test('initializeAudioContext creates a single AudioContext instance', () => {
     createBufferSource: vi.fn(),
     decodeAudioData: vi.fn(),
   } satisfies MockAudioContext;
-  const ctor = vi.fn(() => context);
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
 
   Object.defineProperty(window, 'AudioContext', {
     value: ctor,
@@ -76,7 +78,9 @@ test('unlockAudioContext resumes suspended audio and wires user interaction hand
     createBufferSource: vi.fn(),
     decodeAudioData: vi.fn(),
   } satisfies MockAudioContext;
-  const ctor = vi.fn(() => context);
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
   const addEventListenerSpy = vi.spyOn(document.body, 'addEventListener');
   const removeEventListenerSpy = vi.spyOn(document.body, 'removeEventListener');
 
@@ -117,7 +121,9 @@ test('preloadSounds caches decoded buffers and playSound uses the cached buffer'
     createBufferSource: vi.fn(() => source),
     decodeAudioData: vi.fn(async () => audioBuffer),
   } satisfies MockAudioContext;
-  const ctor = vi.fn(() => context);
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
   const fetchMock = vi.fn(async () => ({
     arrayBuffer: async () => new ArrayBuffer(8),
   }));
