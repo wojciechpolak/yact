@@ -1,7 +1,7 @@
 /**
- * src/components/Footer.test.tsx
+ * src/lib/utils.test.tsx
  *
- * YACT Copyright (C) 2024-2025 Wojciech Polak
+ * YACT Copyright (C) 2026 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,15 +18,12 @@
  */
 
 import { expect, test } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import Footer from './Footer';
+import { cn } from './utils';
 
-test('Footer exposes the GitHub link with safe external-link attributes', () => {
-  render(<Footer />);
+test('cn merges conflicting tailwind classes', () => {
+  expect(cn('px-2', 'px-4', 'text-sm')).toBe('px-4 text-sm');
+});
 
-  const link = screen.getByRole('link', { name: 'View on GitHub' });
-
-  expect(link.getAttribute('href')).toBe('https://github.com/wojciechpolak/yact');
-  expect(link.getAttribute('target')).toBe('_blank');
-  expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+test('cn ignores falsy values', () => {
+  expect(cn('alpha', null, undefined, false, 'beta')).toBe('alpha beta');
 });

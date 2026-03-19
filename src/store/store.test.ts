@@ -1,7 +1,7 @@
 /**
- * src/components/Footer.test.tsx
+ * src/store/store.test.tsx
  *
- * YACT Copyright (C) 2024-2025 Wojciech Polak
+ * YACT Copyright (C) 2026 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -18,15 +18,27 @@
  */
 
 import { expect, test } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import Footer from './Footer';
+import { makeStore } from './store';
+import { setInitialTime } from './timerSlice';
 
-test('Footer exposes the GitHub link with safe external-link attributes', () => {
-  render(<Footer />);
+test('makeStore creates a store with the timer slice', () => {
+  const store = makeStore();
 
-  const link = screen.getByRole('link', { name: 'View on GitHub' });
+  expect(store.getState().timer).toEqual({
+    initialTime: 60,
+    savedInitialTime: 60,
+    isActive: false,
+    repeat: false,
+    targetTime: null,
+  });
+});
 
-  expect(link.getAttribute('href')).toBe('https://github.com/wojciechpolak/yact');
-  expect(link.getAttribute('target')).toBe('_blank');
-  expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+test('makeStore returns isolated store instances', () => {
+  const firstStore = makeStore();
+  const secondStore = makeStore();
+
+  firstStore.dispatch(setInitialTime(90));
+
+  expect(firstStore.getState().timer.initialTime).toBe(90);
+  expect(secondStore.getState().timer.initialTime).toBe(60);
 });
