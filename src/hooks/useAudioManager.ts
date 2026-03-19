@@ -26,9 +26,8 @@ import { useRef, useCallback } from 'react';
  * preloading audio files, and playing them.
  */
 export function useAudioManager() {
-
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioBuffersRef = useRef<{[key: string]: AudioBuffer}>({});
+  const audioBuffersRef = useRef<{ [key: string]: AudioBuffer }>({});
 
   const initializeAudioContext = useCallback(() => {
     if (!audioContextRef.current) {

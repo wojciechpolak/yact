@@ -79,7 +79,9 @@ afterEach(() => {
 });
 
 test('useSettings throws outside the provider', () => {
-  expect(() => renderHook(() => useSettings())).toThrow('useSettings must be used within a SettingsProvider');
+  expect(() => renderHook(() => useSettings())).toThrow(
+    'useSettings must be used within a SettingsProvider',
+  );
 });
 
 test('SettingsProvider loads defaults when localStorage is empty', async () => {

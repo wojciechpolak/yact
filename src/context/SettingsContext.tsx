@@ -60,7 +60,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const playEndSound = savedPlayEndSound !== null ? savedPlayEndSound === 'true' : true;
     const playLastTenSecondsSound =
       savedPlayLastTenSecondsSound !== null ? savedPlayLastTenSecondsSound === 'true' : true;
-    const showNotifications = savedShowNotifications !== null ? savedShowNotifications === 'true' : false;
+    const showNotifications =
+      savedShowNotifications !== null ? savedShowNotifications === 'true' : false;
     const updateTitle = savedUpdateTitle !== null ? savedUpdateTitle === 'true' : true;
 
     setSettings({
@@ -95,7 +96,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const setCountToTime = (value: boolean) => setSettings({ ...settings, countToTime: value });
   const setPlayLastTenSecondsSound = (value: boolean) =>
     setSettings({ ...settings, playLastTenSecondsSound: value });
-  const setShowNotifications = (value: boolean) => setSettings({ ...settings, showNotifications: value });
+  const setShowNotifications = (value: boolean) =>
+    setSettings({ ...settings, showNotifications: value });
   const setUpdateTitle = (value: boolean) => setSettings({ ...settings, updateTitle: value });
 
   return (

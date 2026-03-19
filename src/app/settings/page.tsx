@@ -29,7 +29,7 @@ import { useSettings } from '@/context/SettingsContext';
 
 const SettingsPage = () => {
   const hashParams = useHashParams();
-  const {theme, setTheme} = useTheme();
+  const { theme, setTheme } = useTheme();
 
   // Use settings from context
   const {
@@ -63,10 +63,7 @@ const SettingsPage = () => {
       <div className="w-full max-w-md bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Settings</h1>
-          <Link
-            href={{pathname: '/', hash: queryParams.toString()}}
-            passHref
-          >
+          <Link href={{ pathname: '/', hash: queryParams.toString() }} passHref>
             <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1 hover:scale-105">
               <FaArrowLeft size={24} />
               <span className="hidden sm:inline">Back</span>
@@ -75,79 +72,100 @@ const SettingsPage = () => {
         </div>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <Label htmlFor="countUp"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="countUp"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Count up when timer ends
             </Label>
-            <Switch id="countUp"
-                    checked={countUp}
-                    onCheckedChange={(checked) => setCountUp(checked)}
+            <Switch
+              id="countUp"
+              checked={countUp}
+              onCheckedChange={(checked) => setCountUp(checked)}
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="showNotifications"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="showNotifications"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Show notifications when timer ends
             </Label>
-            <Switch id="showNotifications"
-                    checked={showNotifications}
-                    onCheckedChange={(checked) => setShowNotifications(checked)}
+            <Switch
+              id="showNotifications"
+              checked={showNotifications}
+              onCheckedChange={(checked) => setShowNotifications(checked)}
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="playEndSound"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="playEndSound"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Play sound when timer ends
             </Label>
-            <Switch id="playEndSound"
-                    checked={playEndSound}
-                    onCheckedChange={(checked) => setPlayEndSound(checked)}
+            <Switch
+              id="playEndSound"
+              checked={playEndSound}
+              onCheckedChange={(checked) => setPlayEndSound(checked)}
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="playLastTenSecondsSound"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="playLastTenSecondsSound"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Play sound at each of the last 10 seconds
             </Label>
-            <Switch id="playLastTenSecondsSound"
-                    checked={playLastTenSecondsSound}
-                    onCheckedChange={(checked) => setPlayLastTenSecondsSound(checked)}
+            <Switch
+              id="playLastTenSecondsSound"
+              checked={playLastTenSecondsSound}
+              onCheckedChange={(checked) => setPlayLastTenSecondsSound(checked)}
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="updateTitle"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="updateTitle"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Update title
             </Label>
-            <Switch id="updateTitle"
-                    checked={updateTitle}
-                    onCheckedChange={(checked) => setUpdateTitle(checked)}
+            <Switch
+              id="updateTitle"
+              checked={updateTitle}
+              onCheckedChange={(checked) => setUpdateTitle(checked)}
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="system-theme"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="system-theme"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Use system theme
             </Label>
-            <Switch id="system-theme"
-                    checked={theme === 'system'}
-                    onCheckedChange={(checked) => setTheme(checked ? 'system' : 'light')}
+            <Switch
+              id="system-theme"
+              checked={theme === 'system'}
+              onCheckedChange={(checked) => setTheme(checked ? 'system' : 'light')}
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="theme"
-                   className="text-xl relative inline-flex items-center cursor-pointer">
+            <Label
+              htmlFor="theme"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
               Use dark theme
             </Label>
-            <Switch id="theme"
-                    checked={theme === 'dark'}
-                    onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+            <Switch
+              id="theme"
+              checked={theme === 'dark'}
+              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
             />
           </div>
         </div>

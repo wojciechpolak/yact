@@ -1,6 +1,6 @@
 # YACT (Yet Another Countdown Timer)
 
-YACT is a customizable countdown timer web application.  It allows
+YACT is a customizable countdown timer web application. It allows
 users to set timers with specific hours, minutes, and seconds, and
 offers various settings to tailor the timer's behavior according to
 individual preferences.

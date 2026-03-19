@@ -52,16 +52,11 @@ export default function CountdownTimer({
   repeat,
   targetTime,
 }: CountdownTimerProps) {
-
   const { showNotifications, updateTitle } = useSettings();
 
   // Audio manager
-  const {
-    initializeAudioContext,
-    unlockAudioContext,
-    preloadSounds,
-    playSound,
-  } = useAudioManager();
+  const { initializeAudioContext, unlockAudioContext, preloadSounds, playSound } =
+    useAudioManager();
 
   // Notification function
   const sendNotification = () => {
@@ -74,8 +69,7 @@ export default function CountdownTimer({
         body: 'Your countdown timer has ended.',
         icon: '/icons/icon-192x192.png',
       });
-    }
-    else if (Notification.permission !== 'denied') {
+    } else if (Notification.permission !== 'denied') {
       Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
           new Notification('Timer Finished', {
@@ -92,29 +86,12 @@ export default function CountdownTimer({
     if (isActive) {
       initializeAudioContext();
       unlockAudioContext();
-      preloadSounds([
-        '/audio/end.mp3',
-        '/audio/tick.mp3'
-      ]);
+      preloadSounds(['/audio/end.mp3', '/audio/tick.mp3']);
     }
-  }, [
-    initializeAudioContext,
-    isActive,
-    preloadSounds,
-    unlockAudioContext,
-  ]);
+  }, [initializeAudioContext, isActive, preloadSounds, unlockAudioContext]);
 
   // Hook: main timer logic
-  const {
-    timeLeft,
-    setTimeLeft,
-    isEditing,
-    openEditor,
-    closeEditor,
-    h,
-    m,
-    s,
-  } = useCountdownTimer({
+  const { timeLeft, setTimeLeft, isEditing, openEditor, closeEditor, h, m, s } = useCountdownTimer({
     countUp,
     countToTime,
     initialTime,
@@ -166,8 +143,7 @@ export default function CountdownTimer({
       }
       const diffSeconds = Math.max(0, Math.round((target.getTime() - now.getTime()) / 1000));
       setTimeLeft(diffSeconds);
-    }
-    else {
+    } else {
       setTimeLeft(totalSeconds);
     }
 
@@ -215,7 +191,9 @@ export default function CountdownTimer({
         {fmt(h)}:{fmt(m)}:{fmt(s)}
       </div>
 
-      <div id="screen-reader-update" aria-live="polite">{ariaTimer}</div>
+      <div id="screen-reader-update" aria-live="polite">
+        {ariaTimer}
+      </div>
 
       <TimerEditorModal
         isOpen={isEditing}

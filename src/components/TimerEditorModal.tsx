@@ -41,7 +41,6 @@ export default function TimerEditorModal({
   onClose,
   onSave,
 }: TimerEditorModalProps) {
-
   const { countToTime, setCountToTime } = useSettings();
 
   const [localHours, setLocalHours] = useState<string>(String(hours));
@@ -88,10 +87,11 @@ export default function TimerEditorModal({
         <div className="flex items-center justify-center mb-6">
           <div className="flex items-center space-x-3">
             <span className="text-sm text-gray-500">Fixed duration</span>
-            <Switch id="mode"
-                    aria-label="Toggle target time mode"
-                    checked={countToTime}
-                    onCheckedChange={(checked) => setCountToTime(checked)}
+            <Switch
+              id="mode"
+              aria-label="Toggle target time mode"
+              checked={countToTime}
+              onCheckedChange={(checked) => setCountToTime(checked)}
             />
             <span className="text-sm text-gray-500">Target time</span>
           </div>
@@ -107,7 +107,7 @@ export default function TimerEditorModal({
               }}
               className="text-4xl hover:scale-110"
             >
-              <FaPlus/>
+              <FaPlus />
             </button>
             <input
               type="number"
@@ -128,7 +128,7 @@ export default function TimerEditorModal({
               }}
               className="text-4xl hover:scale-110"
             >
-              <FaMinus/>
+              <FaMinus />
             </button>
             <span className="mt-2 text-xl">Hours</span>
           </div>
@@ -142,7 +142,7 @@ export default function TimerEditorModal({
               }}
               className="text-4xl hover:scale-110"
             >
-              <FaPlus/>
+              <FaPlus />
             </button>
             <input
               type="number"
@@ -164,7 +164,7 @@ export default function TimerEditorModal({
               }}
               className="text-4xl hover:scale-110"
             >
-              <FaMinus/>
+              <FaMinus />
             </button>
             <span className="mt-2 text-xl">Minutes</span>
           </div>
@@ -178,7 +178,7 @@ export default function TimerEditorModal({
               }}
               className="text-4xl hover:scale-110"
             >
-              <FaPlus/>
+              <FaPlus />
             </button>
             <input
               type="number"
@@ -200,8 +200,8 @@ export default function TimerEditorModal({
               }}
               className="text-4xl hover:scale-110"
             >
-              <FaMinus/>
-              </button>
+              <FaMinus />
+            </button>
             <span className="mt-2 text-xl">Seconds</span>
           </div>
         </div>
@@ -221,5 +221,5 @@ export default function TimerEditorModal({
         </div>
       </div>
     </div>
-  )
+  );
 }

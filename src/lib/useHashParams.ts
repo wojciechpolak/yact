@@ -20,8 +20,7 @@
 import { useState, useEffect } from 'react';
 
 export const useHashParams = () => {
-  const [params, setParams] = useState(
-    new URLSearchParams(window.location.hash.substring(1)));
+  const [params, setParams] = useState(new URLSearchParams(window.location.hash.substring(1)));
 
   useEffect(() => {
     const onHashChange = () => {

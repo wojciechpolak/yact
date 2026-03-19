@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  turbopack: {
-  },
+  turbopack: {},
 };
 
 /** @type {(phase: string, defaultConfig: import("next").NextConfig) => Promise<import("next").NextConfig>} */
-export default async () => {
+export default async function loadNextConfig() {
   if (process.env.NODE_ENV === 'production') {
     const withSerwist = (await import('@serwist/next')).default({
       cacheOnNavigation: true,
@@ -16,4 +15,4 @@ export default async () => {
     return withSerwist(nextConfig);
   }
   return nextConfig;
-};
+}

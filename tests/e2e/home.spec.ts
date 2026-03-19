@@ -26,7 +26,10 @@ test('home page loads with the default timer controls', async ({ page }) => {
   await expect(page.getByRole('timer')).toHaveText('00:01:00');
   await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible();
-  await expect(page.getByRole('switch', { name: 'Repeat' })).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByRole('switch', { name: 'Repeat' })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  );
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
     '/settings#hours=0&minutes=1&seconds=0&repeat=false&active=false',
@@ -45,7 +48,10 @@ test('home page hydrates timer state from localStorage', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('timer')).toHaveText('00:02:05');
-  await expect(page.getByRole('switch', { name: 'Repeat' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('switch', { name: 'Repeat' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
     '/settings#hours=0&minutes=2&seconds=5&repeat=true&active=false',
@@ -64,14 +70,19 @@ test('home page prefers hash parameters over localStorage', async ({ page }) => 
   await page.goto('/#hours=0&minutes=3&seconds=5&repeat=true&active=false');
 
   await expect(page.getByRole('timer')).toHaveText('00:03:05');
-  await expect(page.getByRole('switch', { name: 'Repeat' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('switch', { name: 'Repeat' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
     '/settings#hours=0&minutes=3&seconds=5&repeat=true&active=false',
   );
 });
 
-test('home page shows target mode in the settings link when count-to-time is enabled', async ({ page }) => {
+test('home page shows target mode in the settings link when count-to-time is enabled', async ({
+  page,
+}) => {
   await freezeTime(page, new Date(2026, 0, 1, 10, 0, 0));
   await seedLocalStorage(page, {
     hours: '10',
@@ -238,7 +249,9 @@ test('opening the timer editor updates the saved timer duration', async ({ page 
   );
 });
 
-test('saving a timer with title updates changes the document title and live region', async ({ page }) => {
+test('saving a timer with title updates changes the document title and live region', async ({
+  page,
+}) => {
   await seedLocalStorage(page, {
     updateTitle: 'true',
     countUp: 'true',
@@ -274,7 +287,9 @@ test('timer editor target-time mode persists in settings state', async ({ page }
   await modeSwitch.click();
 
   await expect(modeSwitch).toHaveAttribute('aria-checked', 'true');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('countToTime'))).toBe('true');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('countToTime')))
+    .toBe('true');
 });
 
 test('timer editor cancel keeps the current timer value unchanged', async ({ page }) => {
@@ -313,8 +328,12 @@ test('fullscreen button enters and exits fullscreen on desktop', async ({ page }
   await expect(fullscreenButton).toBeVisible();
 
   await fullscreenButton.click();
-  await expect.poll(async () => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
+  await expect
+    .poll(async () => page.evaluate(() => document.fullscreenElement !== null))
+    .toBe(true);
 
   await fullscreenButton.click();
-  await expect.poll(async () => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+  await expect
+    .poll(async () => page.evaluate(() => document.fullscreenElement === null))
+    .toBe(true);
 });

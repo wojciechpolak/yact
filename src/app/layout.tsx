@@ -36,23 +36,23 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    {media: '(prefers-color-scheme: light)', color: '#ffffff'},
-    {media: '(prefers-color-scheme: dark)', color: '#020817'},
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#020817' },
   ],
-}
+};
 
-export default function RootLayout({children}: Props) {
+export default function RootLayout({ children }: Props) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`antialiased`}>
-      <ThemeProvider attribute="class">
-        <StoreProvider>
-          <SettingsProvider>
-            {children}
-            <Footer />
-          </SettingsProvider>
-        </StoreProvider>
-      </ThemeProvider>
+        <ThemeProvider attribute="class">
+          <StoreProvider>
+            <SettingsProvider>
+              {children}
+              <Footer />
+            </SettingsProvider>
+          </StoreProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

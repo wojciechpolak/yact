@@ -54,14 +54,7 @@ test('TimerEditorModal clamps values before saving', () => {
   const onSave = vi.fn();
 
   render(
-    <TimerEditorModal
-      isOpen
-      hours={1}
-      minutes={2}
-      seconds={3}
-      onClose={vi.fn()}
-      onSave={onSave}
-    />,
+    <TimerEditorModal isOpen hours={1} minutes={2} seconds={3} onClose={vi.fn()} onSave={onSave} />,
   );
 
   const inputs = screen.getAllByRole('spinbutton');

@@ -139,7 +139,9 @@ test('TimerSync falls back to localStorage when the hash is empty', async () => 
   });
 
   expect(state.setCountToTime).toHaveBeenCalledWith(true);
-  expect(state.replace).toHaveBeenCalledWith('/#hours=4&minutes=5&seconds=6&repeat=true&active=false');
+  expect(state.replace).toHaveBeenCalledWith(
+    '/#hours=4&minutes=5&seconds=6&repeat=true&active=false',
+  );
 });
 
 test('TimerSync mirrors store updates into localStorage and the URL hash', async () => {
@@ -156,7 +158,9 @@ test('TimerSync mirrors store updates into localStorage and the URL hash', async
   store.dispatch(setTargetTime(999));
 
   await waitFor(() => {
-    expect(state.replace).toHaveBeenCalledWith('/#hours=1&minutes=2&seconds=3&repeat=false&active=true&targetTime=999');
+    expect(state.replace).toHaveBeenCalledWith(
+      '/#hours=1&minutes=2&seconds=3&repeat=false&active=true&targetTime=999',
+    );
   });
 
   expect(localStorage.getItem('hours')).toBe('1');

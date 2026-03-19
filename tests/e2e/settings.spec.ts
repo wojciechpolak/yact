@@ -20,7 +20,9 @@
 import { expect, test } from '@playwright/test';
 import { freezeTime, seedLocalStorage } from './helpers';
 
-test('settings page shows the toggles and returns to the home route with the same hash', async ({ page }) => {
+test('settings page shows the toggles and returns to the home route with the same hash', async ({
+  page,
+}) => {
   await seedLocalStorage(page, {
     hours: '1',
     minutes: '2',
@@ -38,20 +40,24 @@ test('settings page shows the toggles and returns to the home route with the sam
   await page.goto('/settings#hours=1&minutes=2&seconds=3&repeat=true&active=false');
 
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-  await expect(page.getByRole('switch', { name: 'Count up when timer ends' })).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByRole('switch', { name: 'Show notifications when timer ends' })).toHaveAttribute(
+  await expect(page.getByRole('switch', { name: 'Count up when timer ends' })).toHaveAttribute(
     'aria-checked',
-    'false',
+    'true',
   );
+  await expect(
+    page.getByRole('switch', { name: 'Show notifications when timer ends' }),
+  ).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByRole('switch', { name: 'Play sound when timer ends' })).toHaveAttribute(
     'aria-checked',
     'true',
   );
-  await expect(page.getByRole('switch', { name: 'Play sound at each of the last 10 seconds' })).toHaveAttribute(
+  await expect(
+    page.getByRole('switch', { name: 'Play sound at each of the last 10 seconds' }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('switch', { name: 'Update title' })).toHaveAttribute(
     'aria-checked',
     'true',
   );
-  await expect(page.getByRole('switch', { name: 'Update title' })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('link', { name: 'Back' })).toHaveAttribute(
     'href',
     '/#hours=1&minutes=2&seconds=3&repeat=true&active=false',
@@ -59,7 +65,9 @@ test('settings page shows the toggles and returns to the home route with the sam
 
   await page.getByRole('switch', { name: 'Show notifications when timer ends' }).click();
 
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('showNotifications'))).toBe('true');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('showNotifications')))
+    .toBe('true');
 
   await page.getByRole('link', { name: 'Back' }).click();
   await expect(page).toHaveURL(/\/#hours=1&minutes=2&seconds=3&repeat=true&active=false$/);
@@ -111,9 +119,15 @@ test('settings page persists multiple preference switches and theme state', asyn
   await page.getByRole('switch', { name: 'Update title' }).click();
   await page.getByRole('switch', { name: 'Use dark theme' }).click();
 
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('countUp'))).toBe('false');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('playEndSound'))).toBe('false');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('updateTitle'))).toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('countUp')))
+    .toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('playEndSound')))
+    .toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('updateTitle')))
+    .toBe('false');
   await expect(page.locator('html')).toHaveClass(/dark/);
 });
 
@@ -152,11 +166,21 @@ test('settings page can toggle every app preference switch', async ({ page }) =>
   await expect(lastTen).toHaveAttribute('aria-checked', 'false');
   await expect(updateTitle).toHaveAttribute('aria-checked', 'false');
 
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('countUp'))).toBe('false');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('showNotifications'))).toBe('true');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('playEndSound'))).toBe('false');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('playLastTenSecondsSound'))).toBe('false');
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem('updateTitle'))).toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('countUp')))
+    .toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('showNotifications')))
+    .toBe('true');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('playEndSound')))
+    .toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('playLastTenSecondsSound')))
+    .toBe('false');
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('updateTitle')))
+    .toBe('false');
 });
 
 test('settings page can toggle the dark theme switch', async ({ page }) => {

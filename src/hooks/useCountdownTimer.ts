@@ -54,7 +54,6 @@ export function useCountdownTimer({
   showNotifications,
   targetTime,
 }: UseCountdownTimerOptions) {
-
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -83,8 +82,7 @@ export function useCountdownTimer({
       const now = Date.now();
       const diff = Math.max(0, Math.round((nextTarget - now) / 1000));
       setTimeLeft(diff);
-    }
-    else {
+    } else {
       setTimeLeft(initialTime);
     }
   }, [computeNextClockTarget, countToTime, initialTime]);
@@ -106,8 +104,7 @@ export function useCountdownTimer({
     // If the local `targetTimeState` is null, but we have a valid
     // "targetTime" from the store that is still in the future,
     // use that first:
-    if (!isInitialTargetTimeUsed && !targetTimeState &&
-      (targetTime && targetTime > now)) {
+    if (!isInitialTargetTimeUsed && !targetTimeState && targetTime && targetTime > now) {
       setTargetTimeState(targetTime);
       setIsInitialTargetTimeUsed(true);
       return;
@@ -126,14 +123,12 @@ export function useCountdownTimer({
           const pastTarget = now + timeLeft * 1000; // timeLeft is negative
           setTargetTimeState(pastTarget);
           // Do not persist past targets to store/url
-        }
-        else {
+        } else {
           const newTarget = computeNextClockTarget(initialTime);
           setTargetTimeState(newTarget);
           onSetTargetTime?.(newTarget);
         }
-      }
-      else {
+      } else {
         const adjustedTime = timeLeft <= 0 && !countUp ? initialTime : timeLeft;
         const newTarget = now + adjustedTime * 1000;
         setTargetTimeState(newTarget);
@@ -188,25 +183,21 @@ export function useCountdownTimer({
             setTargetTimeState(nextTarget);
             onSetTargetTime?.(nextTarget);
             newTimeLeft = Math.round((nextTarget - now) / 1000);
-          }
-          else {
+          } else {
             // Reset to the initial duration
             const nextTarget = now + initialTime * 1000;
             setTargetTimeState(nextTarget);
             onSetTargetTime?.(nextTarget);
             newTimeLeft = initialTime;
           }
-        }
-        else if (countUp) {
+        } else if (countUp) {
           // keep going negative
-        }
-        else {
+        } else {
           // Hard stop at 0
           newTimeLeft = 0;
           onActiveChange(false);
         }
-      }
-      else {
+      } else {
         // We have time > 0
         if (playLastTenSecondsSound && newTimeLeft <= 10) {
           onPlaySound('/audio/tick.mp3');

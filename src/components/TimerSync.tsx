@@ -38,18 +38,13 @@ import {
  *  - On store changes, update URL hash & localStorage
  */
 export default function TimerSync() {
-
   const router = useRouter();
   const hashParams = useHashParams();
   const dispatch = useAppDispatch();
   const { countToTime, setCountToTime } = useSettings();
-  const {
-    initialTime,
-    isActive,
-    repeat,
-    savedInitialTime,
-    targetTime,
-  } = useAppSelector((state) => state.timer);
+  const { initialTime, isActive, repeat, savedInitialTime, targetTime } = useAppSelector(
+    (state) => state.timer,
+  );
 
   // This ref ensures we only parse the hash once on mount
   const hasLoadedRef = useRef(false);
@@ -83,16 +78,14 @@ export default function TimerSync() {
 
     if (targetTimeParam) {
       dispatch(setTargetTime(parseInt(targetTimeParam, 10)));
-    }
-    else {
+    } else {
       dispatch(setTargetTime(null));
     }
 
     // Apply mode to settings context
     if (modeParam === 'target') {
       setCountToTime(true);
-    }
-    else if (modeParam === null) {
+    } else if (modeParam === null) {
       const saved = localStorage.getItem('countToTime');
       if (saved !== null) {
         setCountToTime(saved === 'true');
@@ -115,8 +108,7 @@ export default function TimerSync() {
     localStorage.setItem('active', isActive.toString());
     if (isActive && targetTime) {
       localStorage.setItem('targetTime', targetTime.toString());
-    }
-    else {
+    } else {
       localStorage.removeItem('targetTime');
     }
     localStorage.setItem('countToTime', countToTime.toString());

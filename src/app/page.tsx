@@ -30,36 +30,28 @@ import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/context/SettingsContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-  resetTimer, setInitialTime, setIsActive,
-  setRepeat, setSavedInitialTime, setTargetTime
+  resetTimer,
+  setInitialTime,
+  setIsActive,
+  setRepeat,
+  setSavedInitialTime,
+  setTargetTime,
 } from '@/store/timerSlice';
 
 export default function Home() {
-
   const isMobile = 'ontouchstart' in window || !!navigator.maxTouchPoints;
 
   const [timerKey, setTimerKey] = useState(0);
   const dispatch = useAppDispatch();
-  const {
-    initialTime,
-    isActive,
-    repeat,
-    targetTime,
-  } = useAppSelector((state) => state.timer);
+  const { initialTime, isActive, repeat, targetTime } = useAppSelector((state) => state.timer);
 
   // Load settings from context
-  const {
-    countUp,
-    countToTime,
-    playEndSound,
-    playLastTenSecondsSound,
-  } = useSettings();
+  const { countUp, countToTime, playEndSound, playLastTenSecondsSound } = useSettings();
 
   const toggleFullScreen = () => {
     if (document.fullscreenElement) {
       document.exitFullscreen();
-    }
-    else {
+    } else {
       document.documentElement.requestFullscreen();
     }
   };
@@ -85,7 +77,7 @@ export default function Home() {
     seconds: (initialTime % 60).toString(),
     repeat: repeat.toString(),
     active: isActive.toString(),
-    ...(isActive && targetTime !== null ? {targetTime: targetTime.toString()} : {}),
+    ...(isActive && targetTime !== null ? { targetTime: targetTime.toString() } : {}),
   });
 
   // Add keyboard event listener for space bar
@@ -95,8 +87,7 @@ export default function Home() {
         event.preventDefault();
         if (isActive) {
           handlePause();
-        }
-        else {
+        } else {
           handleStart();
         }
       }
@@ -112,7 +103,6 @@ export default function Home() {
   return (
     <div id="home" className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="absolute top-4 right-4 flex space-x-4 items-center">
-
         {/* Fullscreen Button */}
         {!isMobile && (
           <button
@@ -120,36 +110,33 @@ export default function Home() {
             title="Full Screen"
             className="flex items-center space-x-1 hover:scale-105"
           >
-            <FaExpand size={24} aria-hidden="true"/>
+            <FaExpand size={24} aria-hidden="true" />
             <span className="hidden sm:inline">Full Screen</span>
           </button>
         )}
 
         {/* Repeat Toggle */}
-        <Label htmlFor="repeat"
-               className="text-base text-flex items-center space-x-2">
+        <Label htmlFor="repeat" className="text-base text-flex items-center space-x-2">
           Repeat
         </Label>
-        <Switch id="repeat"
-                aria-label="Repeat"
-                checked={repeat}
-                onCheckedChange={(checked) => dispatch(setRepeat(checked))}
+        <Switch
+          id="repeat"
+          aria-label="Repeat"
+          checked={repeat}
+          onCheckedChange={(checked) => dispatch(setRepeat(checked))}
         />
 
         {/* Settings Link */}
-        <Link href={{pathname: '/settings', hash: queryParams.toString()}}
-              accessKey=","
-              passHref
-        >
+        <Link href={{ pathname: '/settings', hash: queryParams.toString() }} accessKey="," passHref>
           <span className="text-blue-500 hover:text-blue-600 cursor-pointer flex items-center space-x-1">
-            <FaCog size={24} aria-hidden="true"/>
+            <FaCog size={24} aria-hidden="true" />
             <span className="hidden sm:inline">Settings</span>
           </span>
         </Link>
       </div>
 
       {/* Timer Component */}
-      <TimerSync/>
+      <TimerSync />
       <div className="w-full max-w-(--breakpoint-xl)">
         <CountdownTimer
           key={timerKey} // forces re-mount if timerKey changes
@@ -167,7 +154,7 @@ export default function Home() {
             dispatch(setSavedInitialTime(totalSeconds)); // Update saved initial time
           }}
           onSetTargetTime={(targetTime: number | null) => {
-            dispatch(setTargetTime(targetTime))
+            dispatch(setTargetTime(targetTime));
           }}
           onActiveChange={(active) => {
             dispatch(setIsActive(active));

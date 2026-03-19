@@ -99,8 +99,9 @@ test('Page repeat switch updates the settings link query string', async () => {
   fireEvent.click(repeatSwitch);
 
   await waitFor(() => {
-    expect(within(view.container).getByRole('link', { name: 'Settings' })
-      .getAttribute('href')).toContain('repeat=true');
+    expect(
+      within(view.container).getByRole('link', { name: 'Settings' }).getAttribute('href'),
+    ).toContain('repeat=true');
   });
 });
 

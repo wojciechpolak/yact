@@ -33,26 +33,29 @@ export async function seedLocalStorage(page: Page, entries: StorageEntries) {
 export async function freezeTime(page: Page, now: string | number | Date) {
   const fixedTimestamp = new Date(now).getTime();
 
-  await page.addInitScript(({ timestamp }) => {
-    const OriginalDate = Date;
+  await page.addInitScript(
+    ({ timestamp }) => {
+      const OriginalDate = Date;
 
-    class MockDate extends OriginalDate {
-      constructor();
-      constructor(value: string | number | Date);
-      constructor(...args: [] | [string | number | Date]) {
-        if (args.length === 0) {
-          super(timestamp);
-          return;
+      class MockDate extends OriginalDate {
+        constructor();
+        constructor(value: string | number | Date);
+        constructor(...args: [] | [string | number | Date]) {
+          if (args.length === 0) {
+            super(timestamp);
+            return;
+          }
+          super(args[0]);
         }
-        super(args[0]);
+
+        static now() {
+          return timestamp;
+        }
       }
 
-      static now() {
-        return timestamp;
-      }
-    }
-
-    // Keep the browser clock stable for deterministic timer tests.
-    globalThis.Date = MockDate as unknown as DateConstructor;
-  }, { timestamp: fixedTimestamp });
+      // Keep the browser clock stable for deterministic timer tests.
+      globalThis.Date = MockDate as unknown as DateConstructor;
+    },
+    { timestamp: fixedTimestamp },
+  );
 }
