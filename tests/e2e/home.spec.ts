@@ -107,10 +107,12 @@ test('repeat toggle updates the settings hash link', async ({ page }) => {
 test('space bar starts and pauses the timer', async ({ page }) => {
   await page.goto('/');
 
-  await page.keyboard.press('Space');
+  await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
+
+  await page.locator('body').press('Space');
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
 
-  await page.keyboard.press('Space');
+  await page.locator('body').press('Space');
   await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
 });
 
