@@ -1,4 +1,4 @@
-ARG node=22.12-slim
+ARG node=24.14-slim
 
 FROM node:${node} AS yact-base
 
