@@ -18,12 +18,13 @@
  */
 
 import { expect, test } from '@playwright/test';
-import { freezeTime, seedLocalStorage } from './helpers';
+import { freezeTime, screenshotIfVisual, seedLocalStorage } from './helpers';
 
 test('settings page shows the toggles and returns to the home route with the same hash', async ({
   page,
 }) => {
   await seedLocalStorage(page, {
+    theme: 'light',
     hours: '1',
     minutes: '2',
     seconds: '3',
@@ -62,6 +63,7 @@ test('settings page shows the toggles and returns to the home route with the sam
     'href',
     '/#hours=1&minutes=2&seconds=3&repeat=true&active=false',
   );
+  await screenshotIfVisual(page, 'settings-general.png');
 
   await page.getByRole('switch', { name: 'Show notifications when timer ends' }).click();
 
@@ -218,4 +220,9 @@ test('settings page can switch between system and dark themes', async ({ page })
   await darkThemeSwitch.click();
   await expect(darkThemeSwitch).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('html')).toHaveClass(/dark/);
+  await screenshotIfVisual(page, 'settings-theme-dark.png');
+
+  await page.getByRole('link', { name: 'Back' }).click();
+  await expect(page.getByRole('timer')).toBeVisible();
+  await screenshotIfVisual(page, 'home-from-settings-dark.png');
 });

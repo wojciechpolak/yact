@@ -17,9 +17,12 @@
  * with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import type { Page } from '@playwright/test';
+import path from 'node:path';
+
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export type StorageEntries = Record<string, string>;
+const visualStylesPath = path.resolve(process.cwd(), 'tests/e2e/vrt-hide.css');
 
 export async function seedLocalStorage(page: Page, entries: StorageEntries) {
   await page.addInitScript((initialEntries) => {
@@ -58,4 +61,21 @@ export async function freezeTime(page: Page, now: string | number | Date) {
     },
     { timestamp: fixedTimestamp },
   );
+}
+
+export async function screenshotIfVisual(
+  target: Page | Locator,
+  name: string,
+  mask: Locator[] = [],
+) {
+  if (!process.env.VRT) {
+    return;
+  }
+
+  await expect(target).toHaveScreenshot(name, {
+    animations: 'disabled',
+    caret: 'hide',
+    mask,
+    stylePath: visualStylesPath,
+  });
 }

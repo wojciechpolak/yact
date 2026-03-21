@@ -18,9 +18,13 @@
  */
 
 import { expect, test } from '@playwright/test';
-import { freezeTime, seedLocalStorage } from './helpers';
+import { freezeTime, screenshotIfVisual, seedLocalStorage } from './helpers';
 
 test('home page loads with the default timer controls', async ({ page }) => {
+  await seedLocalStorage(page, {
+    theme: 'light',
+  });
+
   await page.goto('/');
 
   await expect(page.getByRole('timer')).toHaveText('00:01:00');
@@ -34,6 +38,7 @@ test('home page loads with the default timer controls', async ({ page }) => {
     'href',
     '/settings#hours=0&minutes=1&seconds=0&repeat=false&active=false',
   );
+  await screenshotIfVisual(page, 'home-shell.png');
 });
 
 test('home page hydrates timer state from localStorage', async ({ page }) => {
@@ -231,10 +236,15 @@ test('count-to-time mode counts down to the next clock occurrence', async ({ pag
 });
 
 test('opening the timer editor updates the saved timer duration', async ({ page }) => {
+  await seedLocalStorage(page, {
+    theme: 'light',
+  });
+
   await page.goto('/');
 
   await page.getByRole('timer').click();
   await expect(page.getByRole('heading', { name: 'Set Time' })).toBeVisible();
+  await screenshotIfVisual(page, 'timer-editor-open.png');
 
   const inputs = page.getByRole('spinbutton');
   await inputs.nth(0).fill('0');

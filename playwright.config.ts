@@ -1,4 +1,10 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
+
+const visualMode = process.env.VRT === '1';
+const defaultReporter = (
+  process.env.CI ? [['github'] as const] : [['list'] as const]
+) as ReporterDescription[];
+const visualReporter = [...defaultReporter, ['html', { open: 'never' }]] as ReporterDescription[];
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -6,7 +12,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'list',
+  expect: {
+    toHaveScreenshot: {
+      pathTemplate: '.visual-regression/{testFilePath}/{arg}{ext}',
+    },
+  },
+  reporter: visualMode ? visualReporter : defaultReporter,
   use: {
     baseURL: 'http://127.0.0.1:3000',
     trace: 'on-first-retry',

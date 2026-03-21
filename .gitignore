@@ -7,6 +7,8 @@
 # testing
 /coverage
 /test-results
+/playwright-report
+/blob-report
 
 # next.js
 /.next/

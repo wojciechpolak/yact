@@ -1,0 +1,8 @@
+nextjs-portal,
+#nextjs-devtools,
+#nextjs-build-indicator,
+[data-nextjs-toast],
+[data-nextjs-devtools-button],
+[data-nextjs-error-toast] {
+  display: none !important;
+}

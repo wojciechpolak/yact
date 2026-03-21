@@ -75,6 +75,20 @@ curl https://raw.githubusercontent.com/wojciechpolak/yact/master/docker-compose.
 
 Visit http://localhost:3000 to access the countdown timer.
 
+### Testing
+
+```shell
+npm test
+npm run e2e
+npm run e2e:vrt:docker
+```
+
+Creating baseline images:
+
+```shell
+npm run e2e:vrt:baseline:docker
+```
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0.
