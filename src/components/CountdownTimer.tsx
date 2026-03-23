@@ -1,7 +1,7 @@
 /**
  * src/components/CountdownTimer.tsx
  *
- * YACT Copyright (C) 2024-2025 Wojciech Polak
+ * YACT Copyright (C) 2024-2026 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -22,6 +22,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
+import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useSettings } from '@/context/SettingsContext';
 import TimerEditorModal from '@/components/TimerEditorModal';
 
@@ -52,7 +53,9 @@ export default function CountdownTimer({
   repeat,
   targetTime,
 }: CountdownTimerProps) {
-  const { showNotifications, updateTitle } = useSettings();
+  const { showNotifications, updateTitle, keepAwake } = useSettings();
+
+  useScreenWakeLock(isActive, keepAwake);
 
   // Audio manager
   const { initializeAudioContext, unlockAudioContext, preloadSounds, playSound } =

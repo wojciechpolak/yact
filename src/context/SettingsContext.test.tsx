@@ -56,6 +56,7 @@ const SettingsProbe = () => {
       <div data-testid="settings-values">
         {[
           `countUp=${settings.countUp}`,
+          `keepAwake=${settings.keepAwake}`,
           `countToTime=${settings.countToTime}`,
           `playEndSound=${settings.playEndSound}`,
           `playLastTenSecondsSound=${settings.playLastTenSecondsSound}`,
@@ -68,6 +69,9 @@ const SettingsProbe = () => {
       </button>
       <button type="button" onClick={() => settings.setUpdateTitle(!settings.updateTitle)}>
         toggle-title
+      </button>
+      <button type="button" onClick={() => settings.setKeepAwake(!settings.keepAwake)}>
+        toggle-keep-awake
       </button>
     </div>
   );
@@ -93,13 +97,14 @@ test('SettingsProvider loads defaults when localStorage is empty', async () => {
 
   await waitFor(() => {
     expect(screen.getByTestId('settings-values').textContent).toBe(
-      'countUp=true,countToTime=false,playEndSound=true,playLastTenSecondsSound=true,showNotifications=false,updateTitle=true',
+      'countUp=true,keepAwake=false,countToTime=false,playEndSound=true,playLastTenSecondsSound=true,showNotifications=false,updateTitle=true',
     );
   });
 });
 
 test('SettingsProvider restores saved settings and persists updates', async () => {
   localStorage.setItem('countUp', 'false');
+  localStorage.setItem('keepAwake', 'true');
   localStorage.setItem('countToTime', 'true');
   localStorage.setItem('playEndSound', 'false');
   localStorage.setItem('playLastTenSecondsSound', 'false');
@@ -114,16 +119,18 @@ test('SettingsProvider restores saved settings and persists updates', async () =
 
   await waitFor(() => {
     expect(screen.getByTestId('settings-values').textContent).toBe(
-      'countUp=false,countToTime=true,playEndSound=false,playLastTenSecondsSound=false,showNotifications=true,updateTitle=false',
+      'countUp=false,keepAwake=true,countToTime=true,playEndSound=false,playLastTenSecondsSound=false,showNotifications=true,updateTitle=false',
     );
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'toggle-count-up' }));
   fireEvent.click(screen.getByRole('button', { name: 'toggle-title' }));
+  fireEvent.click(screen.getByRole('button', { name: 'toggle-keep-awake' }));
 
   await waitFor(() => {
     expect(localStorage.getItem('countUp')).toBe('true');
     expect(localStorage.getItem('updateTitle')).toBe('true');
+    expect(localStorage.getItem('keepAwake')).toBe('false');
     expect(localStorage.getItem('countToTime')).toBe('true');
   });
 });

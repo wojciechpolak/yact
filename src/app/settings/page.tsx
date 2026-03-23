@@ -1,7 +1,7 @@
 /**
  * src/app/settings/page.tsx
  *
- * YACT Copyright (C) 2024-2025 Wojciech Polak
+ * YACT Copyright (C) 2024-2026 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -35,6 +35,8 @@ const SettingsPage = () => {
   const {
     countUp,
     setCountUp,
+    keepAwake,
+    setKeepAwake,
     countToTime,
     playEndSound,
     setPlayEndSound,
@@ -82,6 +84,20 @@ const SettingsPage = () => {
               id="countUp"
               checked={countUp}
               onCheckedChange={(checked) => setCountUp(checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="keepAwake"
+              className="text-xl relative inline-flex items-center cursor-pointer"
+            >
+              Keep screen awake
+            </Label>
+            <Switch
+              id="keepAwake"
+              checked={keepAwake}
+              onCheckedChange={(checked) => setKeepAwake(checked)}
             />
           </div>
 

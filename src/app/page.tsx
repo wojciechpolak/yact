@@ -108,7 +108,7 @@ export default function Home() {
           <button
             onClick={toggleFullScreen}
             title="Full Screen"
-            className="flex items-center space-x-1 hover:scale-105"
+            className="flex items-center space-x-1 hover:scale-105 cursor-pointer"
           >
             <FaExpand size={24} aria-hidden="true" />
             <span className="hidden sm:inline">Full Screen</span>
@@ -167,7 +167,7 @@ export default function Home() {
         {!isActive && (
           <button
             onClick={handleStart}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded text-xl"
+            className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded text-xl cursor-pointer"
           >
             Start
           </button>
@@ -175,14 +175,14 @@ export default function Home() {
         {isActive && (
           <button
             onClick={handlePause}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded text-xl"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded text-xl cursor-pointer"
           >
             Pause
           </button>
         )}
         <button
           onClick={handleReset}
-          className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded text-xl"
+          className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded text-xl cursor-pointer"
         >
           Reset
         </button>

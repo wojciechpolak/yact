@@ -78,7 +78,7 @@ export default function TimerEditorModal({
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-gray-500 hover:text-gray-600 hover:scale-110 text-3xl"
+            className="text-gray-500 hover:text-gray-600 hover:scale-110 text-3xl cursor-pointer"
           >
             ✕
           </button>
@@ -105,7 +105,7 @@ export default function TimerEditorModal({
                 const cur = Math.max(0, parseInt(localHours || '0', 10));
                 setLocalHours(String(cur + 1));
               }}
-              className="text-4xl hover:scale-110"
+              className="text-4xl hover:scale-110 cursor-pointer"
             >
               <FaPlus />
             </button>
@@ -126,7 +126,7 @@ export default function TimerEditorModal({
                 const cur = Math.max(0, parseInt(localHours || '0', 10));
                 setLocalHours(String(cur > 0 ? cur - 1 : 0));
               }}
-              className="text-4xl hover:scale-110"
+              className="text-4xl hover:scale-110 cursor-pointer"
             >
               <FaMinus />
             </button>
@@ -140,7 +140,7 @@ export default function TimerEditorModal({
                 const cur = Math.max(0, parseInt(localMinutes || '0', 10));
                 setLocalMinutes(String(Math.min(59, cur + 1)));
               }}
-              className="text-4xl hover:scale-110"
+              className="text-4xl hover:scale-110 cursor-pointer"
             >
               <FaPlus />
             </button>
@@ -162,7 +162,7 @@ export default function TimerEditorModal({
                 const cur = Math.max(0, parseInt(localMinutes || '0', 10));
                 setLocalMinutes(String(cur > 0 ? cur - 1 : 0));
               }}
-              className="text-4xl hover:scale-110"
+              className="text-4xl hover:scale-110 cursor-pointer"
             >
               <FaMinus />
             </button>
@@ -176,7 +176,7 @@ export default function TimerEditorModal({
                 const cur = Math.max(0, parseInt(localSeconds || '0', 10));
                 setLocalSeconds(String(Math.min(59, cur + 1)));
               }}
-              className="text-4xl hover:scale-110"
+              className="text-4xl hover:scale-110 cursor-pointer"
             >
               <FaPlus />
             </button>
@@ -198,7 +198,7 @@ export default function TimerEditorModal({
                 const cur = Math.max(0, parseInt(localSeconds || '0', 10));
                 setLocalSeconds(String(cur > 0 ? cur - 1 : 0));
               }}
-              className="text-4xl hover:scale-110"
+              className="text-4xl hover:scale-110 cursor-pointer"
             >
               <FaMinus />
             </button>
@@ -208,13 +208,13 @@ export default function TimerEditorModal({
         <div className="flex justify-end space-x-4">
           <button
             onClick={onClose}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded text-xl"
+            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded text-xl cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded text-xl"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded text-xl cursor-pointer"
           >
             Save
           </button>

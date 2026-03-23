@@ -1,7 +1,7 @@
 /**
  * src/context/SettingsContext.tsx
  *
- * YACT Copyright (C) 2024-2025 Wojciech Polak
+ * YACT Copyright (C) 2024-2026 Wojciech Polak
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 interface Settings {
   countUp: boolean;
+  keepAwake: boolean;
   // When true, the timer counts down to a specific time of day (HH:MM:SS)
   // rather than for a fixed duration.
   countToTime: boolean;
@@ -34,6 +35,7 @@ interface Settings {
 
 interface SettingsContextProps extends Settings {
   setCountUp: (value: boolean) => void;
+  setKeepAwake: (value: boolean) => void;
   setCountToTime: (value: boolean) => void;
   setPlayEndSound: (value: boolean) => void;
   setPlayLastTenSecondsSound: (value: boolean) => void;
@@ -49,6 +51,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Load settings from localStorage
     const savedCountUp = localStorage.getItem('countUp');
+    const savedKeepAwake = localStorage.getItem('keepAwake');
     const savedCountToTime = localStorage.getItem('countToTime');
     const savedPlayEndSound = localStorage.getItem('playEndSound');
     const savedPlayLastTenSecondsSound = localStorage.getItem('playLastTenSecondsSound');
@@ -56,6 +59,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const savedUpdateTitle = localStorage.getItem('updateTitle');
 
     const countUp = savedCountUp !== null ? savedCountUp === 'true' : true;
+    const keepAwake = savedKeepAwake !== null ? savedKeepAwake === 'true' : false;
     const countToTime = savedCountToTime !== null ? savedCountToTime === 'true' : false;
     const playEndSound = savedPlayEndSound !== null ? savedPlayEndSound === 'true' : true;
     const playLastTenSecondsSound =
@@ -66,6 +70,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
     setSettings({
       countUp,
+      keepAwake,
       countToTime,
       playEndSound,
       playLastTenSecondsSound,
@@ -78,6 +83,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     // Save settings to localStorage whenever they change
     if (settings) {
       localStorage.setItem('countUp', settings.countUp.toString());
+      localStorage.setItem('keepAwake', settings.keepAwake.toString());
       localStorage.setItem('countToTime', settings.countToTime.toString());
       localStorage.setItem('playEndSound', settings.playEndSound.toString());
       localStorage.setItem('playLastTenSecondsSound', settings.playLastTenSecondsSound.toString());
@@ -92,6 +98,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const setCountUp = (value: boolean) => setSettings({ ...settings, countUp: value });
+  const setKeepAwake = (value: boolean) => setSettings({ ...settings, keepAwake: value });
   const setPlayEndSound = (value: boolean) => setSettings({ ...settings, playEndSound: value });
   const setCountToTime = (value: boolean) => setSettings({ ...settings, countToTime: value });
   const setPlayLastTenSecondsSound = (value: boolean) =>
@@ -105,6 +112,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       value={{
         ...settings,
         setCountUp,
+        setKeepAwake,
         setCountToTime,
         setPlayEndSound,
         setPlayLastTenSecondsSound,
