@@ -30,6 +30,7 @@
     "jsx-a11y/role-has-required-aria-props": "warn",
     "jsx-a11y/role-supports-aria-props": "warn",
     "@typescript-eslint/no-explicit-any": "error",
+    "curly": ["error", "all"],
     "no-unused-expressions": "warn",
     "no-unused-vars": "warn",
     "no-var": "error",
@@ -37,6 +38,7 @@
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "react-hooks/exhaustive-deps": "warn",
-    "react-hooks/rules-of-hooks": "error"
+    "react-hooks/rules-of-hooks": "error",
+    "semi": "error"
   }
 }
