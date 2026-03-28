@@ -1,6 +1,9 @@
-ARG node=24.14-slim
+ARG build_node=24.14-slim
+ARG run_node=24.14-alpine
 
-FROM node:${node} AS yact-base
+FROM node:${build_node} AS yact-base
+
+ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM yact-base AS yact-deps
 WORKDIR /app
@@ -11,36 +14,28 @@ FROM yact-base AS yact-builder
 WORKDIR /app
 COPY --from=yact-deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM yact-base AS yact-runner
+# Production image, only ship the traced standalone output on a small runtime base.
+FROM node:${run_node} AS yact-runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8080
+ENV HOSTNAME=0.0.0.0
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=yact-builder /app/public ./public
-
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN addgroup -S nodejs && adduser -S -u 1001 -G nodejs nextjs
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=yact-builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=yact-builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=yact-builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
 EXPOSE 8080
-ENV PORT=8080
-ENV HOSTNAME="0.0.0.0"
-
-HEALTHCHECK --interval=60m --timeout=3s CMD curl -f http://localhost:8080/ || exit 1
+HEALTHCHECK --interval=60m --timeout=3s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
 
 CMD ["node", "server.js"]

@@ -1,3 +1,14 @@
+**/.git/
+**/.github/
+**/.idea/
+**/.next/
 **/.screenshots/
+**/.visual-regression/
 **/node_modules/
 **/dist/
+**/playwright-report/
+**/test-results/
+**/coverage/
+tests/
+README.md
+COPYING
