@@ -102,6 +102,48 @@ test('SettingsProvider loads defaults when localStorage is empty', async () => {
   });
 });
 
+test('SettingsProvider exposes setPlayLastTenSecondsSound and setShowNotifications', async () => {
+  const Probe = () => {
+    const {
+      playLastTenSecondsSound,
+      showNotifications,
+      setPlayLastTenSecondsSound,
+      setShowNotifications,
+    } = useSettings();
+    return (
+      <div>
+        <span data-testid="last-ten">{String(playLastTenSecondsSound)}</span>
+        <span data-testid="notifications">{String(showNotifications)}</span>
+        <button type="button" onClick={() => setPlayLastTenSecondsSound(false)}>
+          toggle-last-ten
+        </button>
+        <button type="button" onClick={() => setShowNotifications(true)}>
+          toggle-notifications
+        </button>
+      </div>
+    );
+  };
+
+  render(
+    <SettingsProvider>
+      <Probe />
+    </SettingsProvider>,
+  );
+
+  await waitFor(() => {
+    expect(screen.getByTestId('last-ten').textContent).toBe('true');
+    expect(screen.getByTestId('notifications').textContent).toBe('false');
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'toggle-last-ten' }));
+  fireEvent.click(screen.getByRole('button', { name: 'toggle-notifications' }));
+
+  await waitFor(() => {
+    expect(localStorage.getItem('playLastTenSecondsSound')).toBe('false');
+    expect(localStorage.getItem('showNotifications')).toBe('true');
+  });
+});
+
 test('SettingsProvider restores saved settings and persists updates', async () => {
   localStorage.setItem('countUp', 'false');
   localStorage.setItem('keepAwake', 'true');

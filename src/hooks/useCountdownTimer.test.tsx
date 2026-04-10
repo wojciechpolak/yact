@@ -184,6 +184,112 @@ test('count-up mode keeps counting below zero', () => {
   expect(onPlaySound).not.toHaveBeenCalled();
 });
 
+test('restores a running timer from a stored targetTime without recomputing it', () => {
+  const futureTarget = Date.now() + 60000; // 60 s in the future
+  const onSetTargetTime = vi.fn();
+
+  renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 60,
+      isActive: true,
+      targetTime: futureTarget,
+      onSetTargetTime,
+    }),
+  });
+
+  // The stored targetTime is used directly on first activation;
+  // onSetTargetTime must NOT be called for this initialisation path.
+  expect(onSetTargetTime).not.toHaveBeenCalled();
+});
+
+test('repeat in count-to-time mode reschedules to the next day occurrence', () => {
+  // initialTime encodes 10:00:01 — one second after the fake clock of 10:00:00
+  const initialTime = 10 * 3600 + 0 * 60 + 1;
+  const onSetTargetTime = vi.fn();
+
+  const { result } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime,
+      isActive: true,
+      countToTime: true,
+      repeat: true,
+      onSetTargetTime,
+      playEndSound: false,
+    }),
+  });
+
+  expect(result.current.timeLeft).toBe(1);
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  // After the clock target is hit, repeat adds one full day (~86400 s)
+  expect(result.current.timeLeft).toBeGreaterThan(24 * 3600 - 5);
+  // onSetTargetTime called once on start and once when repeating
+  expect(onSetTargetTime).toHaveBeenCalledTimes(2);
+});
+
+test('count-to-time countUp mode uses a past target when resuming after reaching zero', () => {
+  // initialTime encodes 10:00:01 — one second after the fake clock of 10:00:00
+  const initialTime = 10 * 3600 + 0 * 60 + 1;
+  const onSetTargetTime = vi.fn();
+
+  const { result, rerender } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime,
+      isActive: true,
+      countToTime: true,
+      countUp: true,
+      repeat: false,
+      onSetTargetTime,
+      playEndSound: false,
+    }),
+  });
+
+  // Count down to zero then two seconds past it
+  act(() => {
+    vi.advanceTimersByTime(3000);
+  });
+
+  expect(result.current.timeLeft).toBe(-2);
+
+  // Pause — clears targetTimeState
+  act(() => {
+    rerender(
+      createOptions({
+        initialTime,
+        isActive: false,
+        countToTime: true,
+        countUp: true,
+        repeat: false,
+        onSetTargetTime,
+        playEndSound: false,
+      }),
+    );
+  });
+
+  onSetTargetTime.mockClear();
+
+  // Resume — since timeLeft <= 0 and countUp is true, a past target is set
+  // but NOT persisted to the store (onSetTargetTime must not be called)
+  act(() => {
+    rerender(
+      createOptions({
+        initialTime,
+        isActive: true,
+        countToTime: true,
+        countUp: true,
+        repeat: false,
+        onSetTargetTime,
+        playEndSound: false,
+      }),
+    );
+  });
+
+  expect(onSetTargetTime).not.toHaveBeenCalled();
+});
+
 test('plays the last ten seconds sound once the countdown reaches ten seconds', () => {
   const onPlaySound = vi.fn();
 

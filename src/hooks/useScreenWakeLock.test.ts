@@ -120,6 +120,38 @@ describe('useScreenWakeLock', () => {
     });
   });
 
+  it('logs an error when requestWakeLock throws', async () => {
+    requestMock.mockRejectedValue(new Error('Permission denied'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    renderHook(() => useScreenWakeLock(true, true));
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Failed to request Wake Lock', expect.any(Error));
+    });
+  });
+
+  it('logs an error when releaseWakeLock throws', async () => {
+    releaseMock.mockRejectedValue(new Error('Release failed'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const { rerender } = renderHook(
+      ({ isActive, keepAwake }: { isActive: boolean; keepAwake: boolean }) =>
+        useScreenWakeLock(isActive, keepAwake),
+      { initialProps: { isActive: true, keepAwake: true } },
+    );
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalled();
+    });
+
+    rerender({ isActive: false, keepAwake: true });
+
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith('Failed to release Wake Lock', expect.any(Error));
+    });
+  });
+
   it('re-requests wake lock on visibility change if visible and active', async () => {
     renderHook(() => useScreenWakeLock(true, true));
 

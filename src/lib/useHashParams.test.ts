@@ -18,8 +18,12 @@
  */
 
 import { act, renderHook } from '@testing-library/react';
-import { expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { useHashParams } from './useHashParams';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 test('useHashParams reads the current hash on mount', () => {
   window.location.hash = '#hours=1&minutes=2&seconds=3';
@@ -43,4 +47,13 @@ test('useHashParams updates when the hash changes', () => {
 
   expect(result.current.get('hours')).toBe('7');
   expect(result.current.get('repeat')).toBe('true');
+});
+
+test('useHashParams removes the hashchange listener on unmount', () => {
+  const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+  const { unmount } = renderHook(() => useHashParams());
+
+  unmount();
+
+  expect(removeEventListenerSpy).toHaveBeenCalledWith('hashchange', expect.any(Function));
 });

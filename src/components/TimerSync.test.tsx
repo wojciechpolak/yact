@@ -141,6 +141,18 @@ test('TimerSync falls back to localStorage when the hash is empty', async () => 
   );
 });
 
+test('TimerSync includes mode=target in the URL when countToTime is true', async () => {
+  const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
+  state.countToTime = true;
+
+  renderTimerSync();
+
+  await waitFor(() => {
+    const url = replaceStateSpy.mock.calls.at(-1)?.[2] as string;
+    expect(url).toContain('mode=target');
+  });
+});
+
 test('TimerSync mirrors store updates into localStorage and the URL hash', async () => {
   const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
   const { store } = renderTimerSync();

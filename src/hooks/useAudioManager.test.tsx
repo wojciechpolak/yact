@@ -41,6 +41,25 @@ afterEach(() => {
   delete (window as typeof window & { AudioContext?: typeof AudioContext }).AudioContext;
 });
 
+test('initializeAudioContext does nothing when window.AudioContext is unavailable', () => {
+  // AudioContext is already deleted in afterEach; explicitly ensure it is absent
+  Object.defineProperty(window, 'AudioContext', { value: undefined, configurable: true });
+
+  const { result } = renderHook(() => useAudioManager());
+
+  // Should not throw; no context is created
+  act(() => {
+    result.current.initializeAudioContext();
+  });
+
+  // Calling playSound still warns about no context
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  act(() => {
+    result.current.playSound('/audio/end.mp3');
+  });
+  expect(warnSpy).toHaveBeenCalledWith('Cannot play sound before user interaction');
+});
+
 test('initializeAudioContext creates a single AudioContext instance', () => {
   const context = {
     state: 'running',
@@ -172,4 +191,99 @@ test('playSound warns if the audio context has not been initialized', () => {
   });
 
   expect(warnSpy).toHaveBeenCalledWith('Cannot play sound before user interaction');
+});
+
+test('unlockAudioContext returns early when the context is already running', () => {
+  const context = {
+    state: 'running' as const,
+    destination: {} as AudioDestinationNode,
+    resume: vi.fn(),
+    createBufferSource: vi.fn(),
+    decodeAudioData: vi.fn(),
+  };
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
+  const addEventListenerSpy = vi.spyOn(document.body, 'addEventListener');
+
+  Object.defineProperty(window, 'AudioContext', { value: ctor, configurable: true });
+
+  const { result } = renderHook(() => useAudioManager());
+
+  act(() => {
+    result.current.initializeAudioContext();
+    result.current.unlockAudioContext();
+  });
+
+  expect(context.resume).not.toHaveBeenCalled();
+  expect(addEventListenerSpy).not.toHaveBeenCalled();
+});
+
+test('preloadSounds returns early when the audio context is not initialized', () => {
+  const fetchMock = vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(8) }));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const { result } = renderHook(() => useAudioManager());
+
+  act(() => {
+    result.current.preloadSounds(['/audio/end.mp3']);
+  });
+
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test('preloadSounds logs an error when fetch fails', async () => {
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  const fetchMock = vi.fn(async () => {
+    throw new Error('Network error');
+  });
+  vi.stubGlobal('fetch', fetchMock);
+
+  const context = {
+    state: 'running' as const,
+    destination: {} as AudioDestinationNode,
+    resume: vi.fn(),
+    createBufferSource: vi.fn(),
+    decodeAudioData: vi.fn(),
+  };
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
+  Object.defineProperty(window, 'AudioContext', { value: ctor, configurable: true });
+
+  const { result } = renderHook(() => useAudioManager());
+
+  act(() => {
+    result.current.initializeAudioContext();
+    result.current.preloadSounds(['/audio/end.mp3']);
+  });
+
+  await waitFor(() => {
+    expect(errorSpy).toHaveBeenCalledWith('Error preloading sound:', expect.any(Error));
+  });
+});
+
+test('playSound logs an error when the buffer has not been preloaded', () => {
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+  const context = {
+    state: 'running' as const,
+    destination: {} as AudioDestinationNode,
+    resume: vi.fn(),
+    createBufferSource: vi.fn(),
+    decodeAudioData: vi.fn(),
+  };
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
+  Object.defineProperty(window, 'AudioContext', { value: ctor, configurable: true });
+
+  const { result } = renderHook(() => useAudioManager());
+
+  act(() => {
+    result.current.initializeAudioContext();
+    result.current.playSound('/audio/missing.mp3');
+  });
+
+  expect(errorSpy).toHaveBeenCalledWith('Audio buffer not found for url:', '/audio/missing.mp3');
 });

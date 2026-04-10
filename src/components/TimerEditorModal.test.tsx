@@ -67,6 +67,106 @@ test('TimerEditorModal clamps values before saving', () => {
   expect(onSave).toHaveBeenCalledWith(0, 59, 59);
 });
 
+test('TimerEditorModal plus and minus buttons adjust hours value', () => {
+  render(
+    <TimerEditorModal
+      isOpen
+      hours={5}
+      minutes={0}
+      seconds={0}
+      onClose={vi.fn()}
+      onSave={vi.fn()}
+    />,
+  );
+
+  const buttons = screen.getAllByRole('button');
+  // DOM order: Close, +H, -H, +M, -M, +S, -S, Cancel, Save
+  const plusHours = buttons[1];
+  const minusHours = buttons[2];
+  const [hoursInput] = screen.getAllByRole('spinbutton');
+
+  fireEvent.click(plusHours);
+  expect((hoursInput as HTMLInputElement).value).toBe('6');
+
+  fireEvent.click(minusHours);
+  expect((hoursInput as HTMLInputElement).value).toBe('5');
+});
+
+test('TimerEditorModal onBlur clamps hours to a minimum of 0', () => {
+  render(
+    <TimerEditorModal
+      isOpen
+      hours={2}
+      minutes={0}
+      seconds={0}
+      onClose={vi.fn()}
+      onSave={vi.fn()}
+    />,
+  );
+
+  const [hoursInput] = screen.getAllByRole('spinbutton');
+
+  fireEvent.change(hoursInput, { target: { value: '-3' } });
+  fireEvent.blur(hoursInput);
+  expect((hoursInput as HTMLInputElement).value).toBe('0');
+});
+
+test('TimerEditorModal onBlur clamps minutes and seconds to 0-59', () => {
+  render(
+    <TimerEditorModal
+      isOpen
+      hours={0}
+      minutes={30}
+      seconds={30}
+      onClose={vi.fn()}
+      onSave={vi.fn()}
+    />,
+  );
+
+  const [, minutesInput, secondsInput] = screen.getAllByRole('spinbutton');
+
+  fireEvent.change(minutesInput, { target: { value: '75' } });
+  fireEvent.blur(minutesInput);
+  expect((minutesInput as HTMLInputElement).value).toBe('59');
+
+  fireEvent.change(secondsInput, { target: { value: '99' } });
+  fireEvent.blur(secondsInput);
+  expect((secondsInput as HTMLInputElement).value).toBe('59');
+});
+
+test('TimerEditorModal plus and minus buttons adjust minutes and seconds', () => {
+  render(
+    <TimerEditorModal
+      isOpen
+      hours={0}
+      minutes={5}
+      seconds={10}
+      onClose={vi.fn()}
+      onSave={vi.fn()}
+    />,
+  );
+
+  const buttons = screen.getAllByRole('button');
+  // DOM order: Close, +H, -H, +M, -M, +S, -S, Cancel, Save
+  const plusMinutes = buttons[3];
+  const minusMinutes = buttons[4];
+  const plusSeconds = buttons[5];
+  const minusSeconds = buttons[6];
+  const [, minutesInput, secondsInput] = screen.getAllByRole('spinbutton');
+
+  fireEvent.click(plusMinutes);
+  expect((minutesInput as HTMLInputElement).value).toBe('6');
+
+  fireEvent.click(minusMinutes);
+  expect((minutesInput as HTMLInputElement).value).toBe('5');
+
+  fireEvent.click(plusSeconds);
+  expect((secondsInput as HTMLInputElement).value).toBe('11');
+
+  fireEvent.click(minusSeconds);
+  expect((secondsInput as HTMLInputElement).value).toBe('10');
+});
+
 test('TimerEditorModal closes and toggles target time mode', () => {
   const onClose = vi.fn();
 
