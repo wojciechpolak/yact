@@ -21,7 +21,7 @@
 set -eu
 
 mode="${1:-compare}"
-image="mcr.microsoft.com/playwright:v1.58.2-noble"
+image="mcr.microsoft.com/playwright:v1.59.1-noble"
 workdir="$(pwd)"
 node_modules_volume="yact-vrt-node_modules"
 
