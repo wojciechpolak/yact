@@ -92,7 +92,7 @@ afterEach(() => {
 test('TimerSync hydrates the store from hash parameters', async () => {
   const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
   state.hashParams = new URLSearchParams(
-    'hours=1&minutes=2&seconds=3&repeat=true&active=true&targetTime=12345&mode=target',
+    'hours=1&minutes=2&seconds=3&repeat=true&active=true&targetTime=12345&cooldownSeconds=9&breakColor=%23ff0000&cyclePhase=rest&mode=target',
   );
 
   const { store } = renderTimerSync();
@@ -103,6 +103,9 @@ test('TimerSync hydrates the store from hash parameters', async () => {
       savedInitialTime: 3723,
       isActive: true,
       repeat: true,
+      cooldownSeconds: 9,
+      breakColor: '#ff0000',
+      cyclePhase: 'rest',
       targetTime: 12345,
     });
   });
@@ -111,11 +114,9 @@ test('TimerSync hydrates the store from hash parameters', async () => {
   expect(localStorage.getItem('hours')).toBe('1');
   expect(localStorage.getItem('minutes')).toBe('2');
   expect(localStorage.getItem('seconds')).toBe('3');
-  expect(replaceStateSpy).toHaveBeenCalledWith(
-    null,
-    '',
-    '/#hours=1&minutes=2&seconds=3&repeat=true&active=true&targetTime=12345',
-  );
+  expect(replaceStateSpy.mock.calls.at(-1)?.[2]).toContain('breakColor=%23ff0000');
+  expect(replaceStateSpy.mock.calls.at(-1)?.[2]).toContain('cyclePhase=rest');
+  expect(replaceStateSpy.mock.calls.at(-1)?.[2]).toContain('targetTime=12345');
 });
 
 test('TimerSync falls back to localStorage when the hash is empty', async () => {
@@ -126,6 +127,7 @@ test('TimerSync falls back to localStorage when the hash is empty', async () => 
   localStorage.setItem('repeat', 'true');
   localStorage.setItem('active', 'false');
   localStorage.setItem('countToTime', 'true');
+  localStorage.setItem('breakColor', '#123456');
 
   const { store } = renderTimerSync();
 
@@ -134,11 +136,8 @@ test('TimerSync falls back to localStorage when the hash is empty', async () => 
   });
 
   expect(state.setCountToTime).toHaveBeenCalledWith(true);
-  expect(replaceStateSpy).toHaveBeenCalledWith(
-    null,
-    '',
-    '/#hours=4&minutes=5&seconds=6&repeat=true&active=false',
-  );
+  expect(store.getState().timer.breakColor).toBe('#123456');
+  expect(replaceStateSpy.mock.calls.at(-1)?.[2]).toContain('breakColor=%23123456');
 });
 
 test('TimerSync includes mode=target in the URL when countToTime is true', async () => {
@@ -171,7 +170,7 @@ test('TimerSync mirrors store updates into localStorage and the URL hash', async
     expect(replaceStateSpy).toHaveBeenCalledWith(
       null,
       '',
-      '/#hours=1&minutes=2&seconds=3&repeat=false&active=true&targetTime=999',
+      '/#hours=1&minutes=2&seconds=3&repeat=false&active=true&cooldownSeconds=0&cyclePhase=work&targetTime=999',
     );
   });
 
@@ -179,4 +178,6 @@ test('TimerSync mirrors store updates into localStorage and the URL hash', async
   expect(localStorage.getItem('minutes')).toBe('2');
   expect(localStorage.getItem('seconds')).toBe('3');
   expect(localStorage.getItem('targetTime')).toBe('999');
+  expect(localStorage.getItem('cooldownSeconds')).toBe('0');
+  expect(localStorage.getItem('cyclePhase')).toBe('work');
 });

@@ -22,6 +22,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import TimerEditorModal from './TimerEditorModal';
 
 const setCountToTime = vi.fn();
+const defaultBreakColor = '#111111';
 
 vi.mock('@/context/SettingsContext', () => ({
   useSettings: () => ({
@@ -42,6 +43,9 @@ test('TimerEditorModal renders nothing when closed', () => {
       hours={1}
       minutes={2}
       seconds={3}
+      cooldownSeconds={0}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
       onClose={vi.fn()}
       onSave={vi.fn()}
     />,
@@ -54,17 +58,29 @@ test('TimerEditorModal clamps values before saving', () => {
   const onSave = vi.fn();
 
   render(
-    <TimerEditorModal isOpen hours={1} minutes={2} seconds={3} onClose={vi.fn()} onSave={onSave} />,
+    <TimerEditorModal
+      isOpen
+      hours={1}
+      minutes={2}
+      seconds={3}
+      cooldownSeconds={12}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
+      onClose={vi.fn()}
+      onSave={onSave}
+    />,
   );
 
   const inputs = screen.getAllByRole('spinbutton');
   fireEvent.change(inputs[0], { target: { value: '-4' } });
   fireEvent.change(inputs[1], { target: { value: '77' } });
   fireEvent.change(inputs[2], { target: { value: '61' } });
+  fireEvent.change(inputs[3], { target: { value: '-9' } });
+  fireEvent.change(screen.getByLabelText('Break color'), { target: { value: '#ff0000' } });
 
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-  expect(onSave).toHaveBeenCalledWith(0, 59, 59);
+  expect(onSave).toHaveBeenCalledWith(0, 59, 59, 0, '#ff0000');
 });
 
 test('TimerEditorModal plus and minus buttons adjust hours value', () => {
@@ -74,6 +90,9 @@ test('TimerEditorModal plus and minus buttons adjust hours value', () => {
       hours={5}
       minutes={0}
       seconds={0}
+      cooldownSeconds={0}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
       onClose={vi.fn()}
       onSave={vi.fn()}
     />,
@@ -99,6 +118,9 @@ test('TimerEditorModal onBlur clamps hours to a minimum of 0', () => {
       hours={2}
       minutes={0}
       seconds={0}
+      cooldownSeconds={0}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
       onClose={vi.fn()}
       onSave={vi.fn()}
     />,
@@ -118,6 +140,9 @@ test('TimerEditorModal onBlur clamps minutes and seconds to 0-59', () => {
       hours={0}
       minutes={30}
       seconds={30}
+      cooldownSeconds={0}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
       onClose={vi.fn()}
       onSave={vi.fn()}
     />,
@@ -141,6 +166,9 @@ test('TimerEditorModal plus and minus buttons adjust minutes and seconds', () =>
       hours={0}
       minutes={5}
       seconds={10}
+      cooldownSeconds={0}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
       onClose={vi.fn()}
       onSave={vi.fn()}
     />,
@@ -176,6 +204,9 @@ test('TimerEditorModal closes and toggles target time mode', () => {
       hours={1}
       minutes={2}
       seconds={3}
+      cooldownSeconds={0}
+      breakColor={null}
+      defaultBreakColor={defaultBreakColor}
       onClose={onClose}
       onSave={vi.fn()}
     />,

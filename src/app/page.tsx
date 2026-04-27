@@ -30,6 +30,9 @@ import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/context/SettingsContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
+  setCooldownSeconds,
+  setBreakColor,
+  setCyclePhase,
   resetTimer,
   setInitialTime,
   setIsActive,
@@ -43,7 +46,8 @@ export default function Home() {
 
   const [timerKey, setTimerKey] = useState(0);
   const dispatch = useAppDispatch();
-  const { initialTime, isActive, repeat, targetTime } = useAppSelector((state) => state.timer);
+  const { initialTime, isActive, repeat, targetTime, cooldownSeconds, breakColor, cyclePhase } =
+    useAppSelector((state) => state.timer);
 
   // Load settings from context
   const { countUp, countToTime, playEndSound, playLastTenSecondsSound } = useSettings();
@@ -77,7 +81,10 @@ export default function Home() {
     seconds: (initialTime % 60).toString(),
     repeat: repeat.toString(),
     active: isActive.toString(),
-    ...(isActive && targetTime !== null ? { targetTime: targetTime.toString() } : {}),
+    cooldownSeconds: cooldownSeconds.toString(),
+    cyclePhase,
+    ...(breakColor !== null ? { breakColor } : {}),
+    ...(targetTime !== null ? { targetTime: targetTime.toString() } : {}),
   });
 
   // Add keyboard event listener for space bar
@@ -141,6 +148,9 @@ export default function Home() {
         <CountdownTimer
           key={timerKey} // forces re-mount if timerKey changes
           initialTime={initialTime}
+          cooldownSeconds={cooldownSeconds}
+          breakColor={breakColor}
+          cyclePhase={cyclePhase}
           countToTime={countToTime}
           repeat={repeat}
           countUp={countUp}
@@ -148,13 +158,29 @@ export default function Home() {
           playLastTenSecondsSound={playLastTenSecondsSound}
           isActive={isActive}
           targetTime={targetTime}
-          onTimeUpdate={(hours, minutes, seconds) => {
+          onTimeUpdate={(
+            hours,
+            minutes,
+            seconds,
+            nextCooldownSeconds = cooldownSeconds,
+            nextBreakColor = breakColor,
+          ) => {
             const totalSeconds = hours * 3600 + minutes * 60 + seconds;
             dispatch(setInitialTime(totalSeconds));
             dispatch(setSavedInitialTime(totalSeconds)); // Update saved initial time
+            dispatch(setCooldownSeconds(nextCooldownSeconds));
+            dispatch(setBreakColor(nextBreakColor ?? null));
+            dispatch(setCyclePhase('work'));
+            dispatch(setTargetTime(null));
           }}
           onSetTargetTime={(targetTime: number | null) => {
             dispatch(setTargetTime(targetTime));
+          }}
+          onSetCyclePhase={(phase) => {
+            dispatch(setCyclePhase(phase));
+          }}
+          onSetBreakColor={(color) => {
+            dispatch(setBreakColor(color));
           }}
           onActiveChange={(active) => {
             dispatch(setIsActive(active));

@@ -1,5 +1,5 @@
-ARG build_node=24.14-slim
-ARG run_node=24.14-alpine
+ARG build_node=24.15-slim
+ARG run_node=24.15-alpine
 
 FROM node:${build_node} AS yact-base
 

@@ -21,11 +21,16 @@
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export type CyclePhase = 'work' | 'rest';
+
 interface TimerState {
   initialTime: number;
   savedInitialTime: number; // for reset
   isActive: boolean;
   repeat: boolean;
+  cooldownSeconds: number;
+  breakColor: string | null;
+  cyclePhase: CyclePhase;
   targetTime: number | null;
 }
 
@@ -34,6 +39,9 @@ const initialState: TimerState = {
   savedInitialTime: 60, // for reset
   isActive: false,
   repeat: false,
+  cooldownSeconds: 0,
+  breakColor: null,
+  cyclePhase: 'work',
   targetTime: null,
 };
 
@@ -53,11 +61,21 @@ export const timerSlice = createSlice({
     setRepeat: (state, action: PayloadAction<boolean>) => {
       state.repeat = action.payload;
     },
+    setCooldownSeconds: (state, action: PayloadAction<number>) => {
+      state.cooldownSeconds = action.payload;
+    },
+    setBreakColor: (state, action: PayloadAction<string | null>) => {
+      state.breakColor = action.payload;
+    },
+    setCyclePhase: (state, action: PayloadAction<CyclePhase>) => {
+      state.cyclePhase = action.payload;
+    },
     setTargetTime: (state, action: PayloadAction<number | null>) => {
       state.targetTime = action.payload;
     },
     resetTimer: (state) => {
       state.isActive = false;
+      state.cyclePhase = 'work';
       state.targetTime = null;
       state.initialTime = state.savedInitialTime;
     },
@@ -69,6 +87,9 @@ export const {
   setSavedInitialTime,
   setIsActive,
   setRepeat,
+  setCooldownSeconds,
+  setBreakColor,
+  setCyclePhase,
   setTargetTime,
   resetTimer,
 } = timerSlice.actions;

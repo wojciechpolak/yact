@@ -16,7 +16,8 @@ scratch with Next.js, React, and Tailwind CSS.
 - Two Modes: Choose between a fixed duration countdown or a target
   time mode that counts down to a specific clock time (e.g., 16:00:00).
 - Repeat Functionality: Option to automatically repeat the timer when
-  it reaches zero.
+  it reaches zero, with an optional break interval between cycles and a
+  customizable break color.
 - Count Up After Timer Ends: Choose to have the timer count upwards
   after reaching zero.
 - Sound Notifications:

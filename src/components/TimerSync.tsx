@@ -24,6 +24,9 @@ import { useHashParams } from '@/lib/useHashParams';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { useSettings } from '@/context/SettingsContext';
 import {
+  setCooldownSeconds,
+  setBreakColor,
+  setCyclePhase,
   setInitialTime,
   setIsActive,
   setRepeat,
@@ -40,9 +43,16 @@ export default function TimerSync() {
   const hashParams = useHashParams();
   const dispatch = useAppDispatch();
   const { countToTime, setCountToTime } = useSettings();
-  const { initialTime, isActive, repeat, savedInitialTime, targetTime } = useAppSelector(
-    (state) => state.timer,
-  );
+  const {
+    initialTime,
+    isActive,
+    repeat,
+    savedInitialTime,
+    targetTime,
+    cooldownSeconds,
+    breakColor,
+    cyclePhase,
+  } = useAppSelector((state) => state.timer);
 
   // This ref ensures we only parse the hash once on mount
   const hasLoadedRef = useRef(false);
@@ -61,6 +71,10 @@ export default function TimerSync() {
     const repeatParam = hashParams.get('repeat') || localStorage.getItem('repeat');
     const activeParam = hashParams.get('active') || localStorage.getItem('active');
     const targetTimeParam = hashParams.get('targetTime') || localStorage.getItem('targetTime');
+    const cooldownSecondsParam =
+      hashParams.get('cooldownSeconds') || localStorage.getItem('cooldownSeconds');
+    const breakColorParam = hashParams.get('breakColor') || localStorage.getItem('breakColor');
+    const cyclePhaseParam = hashParams.get('cyclePhase') || localStorage.getItem('cyclePhase');
     const modeParam = hashParams.get('mode');
 
     const hours = hoursParam ? parseInt(hoursParam, 10) : 0;
@@ -69,6 +83,13 @@ export default function TimerSync() {
 
     dispatch(setRepeat(repeatParam === 'true'));
     dispatch(setIsActive(activeParam === 'true'));
+    dispatch(
+      setCooldownSeconds(
+        cooldownSecondsParam ? Math.max(0, parseInt(cooldownSecondsParam, 10) || 0) : 0,
+      ),
+    );
+    dispatch(setBreakColor(breakColorParam || null));
+    dispatch(setCyclePhase(cyclePhaseParam === 'rest' ? 'rest' : 'work'));
 
     const totalSeconds = hours * 3600 + minutes * 60 + seconds;
     dispatch(setInitialTime(totalSeconds));
@@ -104,7 +125,14 @@ export default function TimerSync() {
     localStorage.setItem('seconds', secs.toString());
     localStorage.setItem('repeat', repeat.toString());
     localStorage.setItem('active', isActive.toString());
-    if (isActive && targetTime) {
+    localStorage.setItem('cooldownSeconds', cooldownSeconds.toString());
+    if (breakColor) {
+      localStorage.setItem('breakColor', breakColor);
+    } else {
+      localStorage.removeItem('breakColor');
+    }
+    localStorage.setItem('cyclePhase', cyclePhase);
+    if (targetTime !== null) {
       localStorage.setItem('targetTime', targetTime.toString());
     } else {
       localStorage.removeItem('targetTime');
@@ -117,7 +145,12 @@ export default function TimerSync() {
     params.set('seconds', secs.toString());
     params.set('repeat', repeat.toString());
     params.set('active', isActive.toString());
-    if (isActive && targetTime) {
+    params.set('cooldownSeconds', cooldownSeconds.toString());
+    if (breakColor) {
+      params.set('breakColor', breakColor);
+    }
+    params.set('cyclePhase', cyclePhase);
+    if (targetTime !== null) {
       params.set('targetTime', targetTime.toString());
     }
     if (countToTime) {
@@ -128,7 +161,17 @@ export default function TimerSync() {
     const newUrl = `${window.location.pathname}${window.location.search}#${newHash}`;
 
     window.history.replaceState(null, '', newUrl);
-  }, [initialTime, savedInitialTime, isActive, repeat, targetTime, countToTime]);
+  }, [
+    initialTime,
+    savedInitialTime,
+    isActive,
+    repeat,
+    targetTime,
+    countToTime,
+    cooldownSeconds,
+    breakColor,
+    cyclePhase,
+  ]);
 
   return null; // This component doesn't render anything
 }

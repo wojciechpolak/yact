@@ -56,12 +56,21 @@ vi.mock('@/components/CountdownTimer', () => ({
     onSetTargetTime,
     onActiveChange,
   }: {
-    onTimeUpdate: (h: number, m: number, s: number) => void;
+    onTimeUpdate: (
+      h: number,
+      m: number,
+      s: number,
+      cooldownSeconds?: number,
+      breakColor?: string | null,
+    ) => void;
     onSetTargetTime: (t: number | null) => void;
     onActiveChange: (active: boolean) => void;
   }) => (
     <div data-testid="countdown-timer">
       <button onClick={() => onTimeUpdate(1, 30, 0)}>trigger-time-update</button>
+      <button onClick={() => onTimeUpdate(0, 45, 0, 12, '#ff8800')}>
+        trigger-time-update-color
+      </button>
       <button onClick={() => onSetTargetTime(9999)}>trigger-set-target</button>
       <button onClick={() => onActiveChange(false)}>trigger-active-change</button>
     </div>
@@ -165,6 +174,19 @@ test('Page onTimeUpdate dispatches updated time to the store', () => {
   // 1h 30m 0s = 5400 seconds
   expect(store.getState().timer.initialTime).toBe(5400);
   expect(store.getState().timer.savedInitialTime).toBe(5400);
+});
+
+test('Page onTimeUpdate also stores break color and cooldown', () => {
+  const { store, container } = renderPage();
+
+  fireEvent.click(within(container).getByRole('button', { name: 'trigger-time-update-color' }));
+
+  expect(store.getState().timer.initialTime).toBe(2700);
+  expect(store.getState().timer.cooldownSeconds).toBe(12);
+  expect(store.getState().timer.breakColor).toBe('#ff8800');
+  expect(within(container).getByRole('link', { name: 'Settings' }).getAttribute('href')).toContain(
+    'breakColor=%23ff8800',
+  );
 });
 
 test('Page onSetTargetTime dispatches the target time to the store', () => {

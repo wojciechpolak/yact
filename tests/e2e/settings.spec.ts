@@ -61,7 +61,7 @@ test('settings page shows the toggles and returns to the home route with the sam
   );
   await expect(page.getByRole('link', { name: 'Back' })).toHaveAttribute(
     'href',
-    '/#hours=1&minutes=2&seconds=3&repeat=true&active=false',
+    '/#hours=1&minutes=2&seconds=3&repeat=true&active=false&cooldownSeconds=0&cyclePhase=work',
   );
   await screenshotIfVisual(page, 'settings-general.png');
 
@@ -72,7 +72,9 @@ test('settings page shows the toggles and returns to the home route with the sam
     .toBe('true');
 
   await page.getByRole('link', { name: 'Back' }).click();
-  await expect(page).toHaveURL(/\/#hours=1&minutes=2&seconds=3&repeat=true&active=false$/);
+  await expect(page).toHaveURL(
+    /\/#hours=1&minutes=2&seconds=3&repeat=true&active=false&cooldownSeconds=0&cyclePhase=work$/,
+  );
 });
 
 test('settings back link preserves target mode when count-to-time is enabled', async ({ page }) => {
@@ -95,7 +97,7 @@ test('settings back link preserves target mode when count-to-time is enabled', a
 
   await expect(page.getByRole('link', { name: 'Back' })).toHaveAttribute(
     'href',
-    '/#hours=10&minutes=5&seconds=0&repeat=false&active=false&mode=target',
+    '/#hours=10&minutes=5&seconds=0&repeat=false&active=false&cooldownSeconds=0&cyclePhase=work&mode=target',
   );
 });
 

@@ -36,7 +36,7 @@ test('home page loads with the default timer controls', async ({ page }) => {
   );
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
-    '/settings#hours=0&minutes=1&seconds=0&repeat=false&active=false',
+    '/settings#hours=0&minutes=1&seconds=0&repeat=false&active=false&cooldownSeconds=0&cyclePhase=work',
   );
   await screenshotIfVisual(page, 'home-shell.png');
 });
@@ -59,7 +59,7 @@ test('home page hydrates timer state from localStorage', async ({ page }) => {
   );
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
-    '/settings#hours=0&minutes=2&seconds=5&repeat=true&active=false',
+    '/settings#hours=0&minutes=2&seconds=5&repeat=true&active=false&cooldownSeconds=0&cyclePhase=work',
   );
 });
 
@@ -81,7 +81,7 @@ test('home page prefers hash parameters over localStorage', async ({ page }) => 
   );
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
-    '/settings#hours=0&minutes=3&seconds=5&repeat=true&active=false',
+    '/settings#hours=0&minutes=3&seconds=5&repeat=true&active=false&cooldownSeconds=0&cyclePhase=work',
   );
 });
 
@@ -103,7 +103,7 @@ test('home page shows target mode in the settings link when count-to-time is ena
   await expect(page.getByRole('timer')).toHaveText('00:05:00');
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
-    '/settings#hours=10&minutes=5&seconds=0&repeat=false&active=false',
+    '/settings#hours=10&minutes=5&seconds=0&repeat=false&active=false&cooldownSeconds=0&cyclePhase=work',
   );
 });
 
@@ -116,7 +116,7 @@ test('repeat toggle updates the settings hash link', async ({ page }) => {
   await expect(repeatSwitch).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
-    '/settings#hours=0&minutes=1&seconds=0&repeat=true&active=false',
+    '/settings#hours=0&minutes=1&seconds=0&repeat=true&active=false&cooldownSeconds=0&cyclePhase=work',
   );
 });
 
@@ -255,7 +255,7 @@ test('opening the timer editor updates the saved timer duration', async ({ page 
   await expect(page.getByRole('timer')).toHaveText('00:02:30');
   await expect(page.getByRole('link', { name: 'Settings' })).toHaveAttribute(
     'href',
-    '/settings#hours=0&minutes=2&seconds=30&repeat=false&active=false',
+    '/settings#hours=0&minutes=2&seconds=30&repeat=false&active=false&cooldownSeconds=0&cyclePhase=work',
   );
 });
 

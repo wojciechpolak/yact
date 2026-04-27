@@ -29,6 +29,9 @@ test('makeStore creates a store with the timer slice', () => {
     savedInitialTime: 60,
     isActive: false,
     repeat: false,
+    cooldownSeconds: 0,
+    breakColor: null,
+    cyclePhase: 'work',
     targetTime: null,
   });
 });

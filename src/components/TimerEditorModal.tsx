@@ -29,8 +29,17 @@ interface TimerEditorModalProps {
   hours: number; // For duration mode: duration HH; for clock mode: HH target
   minutes: number; // For duration mode: duration MM; for clock mode: MM target
   seconds: number; // For duration mode: duration SS; for clock mode: SS target
+  cooldownSeconds: number;
+  breakColor: string | null;
+  defaultBreakColor: string;
   onClose: () => void;
-  onSave: (hours: number, minutes: number, seconds: number) => void;
+  onSave: (
+    hours: number,
+    minutes: number,
+    seconds: number,
+    cooldownSeconds: number,
+    breakColor: string | null,
+  ) => void;
 }
 
 export default function TimerEditorModal({
@@ -38,6 +47,9 @@ export default function TimerEditorModal({
   hours,
   minutes,
   seconds,
+  cooldownSeconds,
+  breakColor,
+  defaultBreakColor,
   onClose,
   onSave,
 }: TimerEditorModalProps) {
@@ -46,6 +58,8 @@ export default function TimerEditorModal({
   const [localHours, setLocalHours] = useState<string>(String(hours));
   const [localMinutes, setLocalMinutes] = useState<string>(String(minutes));
   const [localSeconds, setLocalSeconds] = useState<string>(String(seconds));
+  const [localCooldownSeconds, setLocalCooldownSeconds] = useState<string>(String(cooldownSeconds));
+  const [localBreakColor, setLocalBreakColor] = useState<string>(breakColor ?? defaultBreakColor);
 
   useEffect(() => {
     // Reset local state when the modal opens
@@ -53,8 +67,10 @@ export default function TimerEditorModal({
       setLocalHours(String(hours));
       setLocalMinutes(String(minutes));
       setLocalSeconds(String(seconds));
+      setLocalCooldownSeconds(String(cooldownSeconds));
+      setLocalBreakColor(breakColor ?? defaultBreakColor);
     }
-  }, [isOpen, hours, minutes, seconds]);
+  }, [breakColor, cooldownSeconds, defaultBreakColor, isOpen, hours, minutes, seconds]);
 
   if (!isOpen) {
     return null;
@@ -64,10 +80,13 @@ export default function TimerEditorModal({
     const parsedH = parseInt(localHours || '0', 10);
     const parsedM = parseInt(localMinutes || '0', 10);
     const parsedS = parseInt(localSeconds || '0', 10);
+    const parsedCooldown = parseInt(localCooldownSeconds || '0', 10);
     const hh = Math.max(0, isNaN(parsedH) ? 0 : parsedH);
     const mm = Math.min(59, Math.max(0, isNaN(parsedM) ? 0 : parsedM));
     const ss = Math.min(59, Math.max(0, isNaN(parsedS) ? 0 : parsedS));
-    onSave(hh, mm, ss);
+    const rest = Math.max(0, isNaN(parsedCooldown) ? 0 : parsedCooldown);
+    const selectedBreakColor = localBreakColor || defaultBreakColor;
+    onSave(hh, mm, ss, rest, selectedBreakColor === defaultBreakColor ? null : selectedBreakColor);
   };
 
   return (
@@ -204,6 +223,62 @@ export default function TimerEditorModal({
             </button>
             <span className="mt-2 text-xl">Seconds</span>
           </div>
+        </div>
+        <div className="mb-8 border-t border-dashed border-gray-200 pt-6 dark:border-zinc-700">
+          <div className="mb-6 flex items-center justify-center gap-3 text-gray-500">
+            <span className="h-px w-12 bg-gray-200 dark:bg-zinc-700" />
+            <span className="text-sm uppercase tracking-[0.3em]">Break settings</span>
+            <span className="h-px w-12 bg-gray-200 dark:bg-zinc-700" />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+            <div className="flex w-44 flex-col items-center gap-3">
+              <label htmlFor="rest-seconds" className="text-xl">
+                Rest seconds
+              </label>
+              <input
+                id="rest-seconds"
+                type="number"
+                value={localCooldownSeconds}
+                onChange={(e) => setLocalCooldownSeconds(e.target.value)}
+                onBlur={() => {
+                  const v = parseInt(localCooldownSeconds || '0', 10);
+                  const clamped = Math.max(0, isNaN(v) ? 0 : v);
+                  setLocalCooldownSeconds(String(clamped));
+                }}
+                min={0}
+                className="w-36 text-center text-3xl border-b dark:bg-zinc-900"
+                aria-label="Rest seconds"
+              />
+            </div>
+
+            <div className="flex w-44 flex-col items-center gap-3">
+              <label htmlFor="break-color" className="text-xl">
+                Break color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  id="break-color"
+                  type="color"
+                  value={localBreakColor}
+                  onChange={(e) => setLocalBreakColor(e.target.value)}
+                  className="h-16 w-24 cursor-pointer rounded border border-gray-300 bg-transparent p-1 dark:border-zinc-700"
+                  aria-label="Break color"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLocalBreakColor(defaultBreakColor)}
+                  className="whitespace-nowrap text-sm text-gray-500 cursor-pointer hover:text-gray-700"
+                >
+                  Use default
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <span className="mt-4 block text-center text-sm text-gray-500">
+            Used between repeated countdowns when Repeat is on.
+          </span>
         </div>
         <div className="flex justify-end space-x-4">
           <button

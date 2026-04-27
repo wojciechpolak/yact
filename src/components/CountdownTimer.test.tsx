@@ -76,9 +76,14 @@ const defaultProps = {
   countUp: false,
   countToTime: false,
   initialTime: 5,
+  cooldownSeconds: 0,
+  breakColor: null as string | null,
+  cyclePhase: 'work' as const,
   isActive: false,
   onActiveChange: vi.fn(),
   onSetTargetTime: vi.fn(),
+  onSetCyclePhase: vi.fn(),
+  onSetBreakColor: vi.fn(),
   playEndSound: false,
   playLastTenSecondsSound: false,
   repeat: false,
@@ -114,6 +119,9 @@ test('CountdownTimer formats negative time and opens the editor from keyboard or
   const timer = screen.getByRole('timer');
   expect(timer.textContent).toBe('+00:00:05');
   expect(timer.getAttribute('aria-label')).toBe('Countdown Timer: 0 hours, 0 minutes, 5 seconds');
+  expect(screen.queryByText('Work')).toBeNull();
+  expect(screen.queryByText('Break')).toBeNull();
+  expect(timer.nextElementSibling?.textContent).toBe('\u00a0');
 
   fireEvent.click(timer);
   fireEvent.keyDown(timer, { key: 'Enter' });
@@ -142,6 +150,44 @@ test('CountdownTimer updates the document title when updateTitle is enabled', ()
   expect(document.title).toBe('01:05 Countdown | YACT');
 });
 
+test('CountdownTimer labels the rest phase when cooldown is active', () => {
+  settingsMock.updateTitle = true;
+  timerMock.timeLeft = 5;
+  timerMock.h = 0;
+  timerMock.m = 0;
+  timerMock.s = 5;
+
+  render(
+    <CountdownTimer
+      {...defaultProps}
+      cyclePhase="rest"
+      cooldownSeconds={10}
+      initialTime={5}
+      breakColor="#ff0000"
+    />,
+  );
+
+  const timer = screen.getByRole('timer');
+  expect(timer.getAttribute('aria-label')).toBe(
+    'Break Countdown Timer: 0 hours, 0 minutes, 5 seconds',
+  );
+  expect(screen.getByText('Break')).toBeDefined();
+  expect(document.title).toBe('Break 00:05 Countdown | YACT');
+  expect(window.getComputedStyle(timer).color).toBe('rgb(255, 0, 0)');
+});
+
+test('CountdownTimer uses the default light blue break color when no override is set', () => {
+  timerMock.timeLeft = 5;
+  timerMock.h = 0;
+  timerMock.m = 0;
+  timerMock.s = 5;
+
+  render(<CountdownTimer {...defaultProps} cyclePhase="rest" cooldownSeconds={10} />);
+
+  const timer = screen.getByRole('timer');
+  expect(window.getComputedStyle(timer).color).toBe('rgb(96, 165, 250)');
+});
+
 test('handleSaveEditor saves fixed-duration time and calls onTimeUpdate', () => {
   const onTimeUpdate = vi.fn();
   timerMock.isEditing = true;
@@ -156,10 +202,11 @@ test('handleSaveEditor saves fixed-duration time and calls onTimeUpdate', () => 
   // 1h 30m 0s = 5400 seconds
   expect(timerMock.setTimeLeft).toHaveBeenCalledWith(5400);
   expect(timerMock.closeEditor).toHaveBeenCalled();
-  expect(onTimeUpdate).toHaveBeenCalledWith(1, 30, 0);
+  expect(onTimeUpdate).toHaveBeenCalledWith(1, 30, 0, 0, null);
   expect(localStorage.getItem('hours')).toBe('1');
   expect(localStorage.getItem('minutes')).toBe('30');
   expect(localStorage.getItem('seconds')).toBe('0');
+  expect(localStorage.getItem('cooldownSeconds')).toBe('0');
 });
 
 test('handleSaveEditor computes a diff from now in count-to-time mode', () => {

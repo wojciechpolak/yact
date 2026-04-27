@@ -24,26 +24,41 @@ import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useSettings } from '@/context/SettingsContext';
+import type { CyclePhase } from '@/store/timerSlice';
 import TimerEditorModal from '@/components/TimerEditorModal';
 
 interface CountdownTimerProps {
   countUp: boolean;
   countToTime: boolean;
   initialTime: number;
+  cooldownSeconds: number;
+  breakColor: string | null;
+  cyclePhase: CyclePhase;
   isActive: boolean; // parent sets or toggles
   onActiveChange: (active: boolean) => void;
   onSetTargetTime: (targetTime: number | null) => void;
-  onTimeUpdate?: (h: number, m: number, s: number) => void; // called on manual edit
+  onTimeUpdate?: (
+    h: number,
+    m: number,
+    s: number,
+    cooldownSeconds?: number,
+    breakColor?: string | null,
+  ) => void; // called on manual edit
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
   repeat: boolean;
   targetTime: number | null;
+  onSetCyclePhase: (phase: CyclePhase) => void;
+  onSetBreakColor: (color: string | null) => void;
 }
 
 export default function CountdownTimer({
   countUp,
   countToTime,
   initialTime,
+  cooldownSeconds,
+  breakColor,
+  cyclePhase,
   isActive,
   onActiveChange,
   onSetTargetTime,
@@ -52,6 +67,8 @@ export default function CountdownTimer({
   playLastTenSecondsSound,
   repeat,
   targetTime,
+  onSetCyclePhase,
+  onSetBreakColor,
 }: CountdownTimerProps) {
   const { showNotifications, updateTitle, keepAwake } = useSettings();
 
@@ -60,6 +77,7 @@ export default function CountdownTimer({
   // Audio manager
   const { initializeAudioContext, unlockAudioContext, preloadSounds, playSound } =
     useAudioManager();
+  const defaultBreakColor = '#60a5fa';
 
   // Notification function
   const sendNotification = () => {
@@ -98,11 +116,14 @@ export default function CountdownTimer({
     countUp,
     countToTime,
     initialTime,
+    cooldownSeconds,
+    cyclePhase,
     isActive,
     onActiveChange,
     onPlaySound: playSound,
     onSendNotification: sendNotification,
     onSetTargetTime,
+    onSetCyclePhase,
     playEndSound,
     playLastTenSecondsSound,
     repeat,
@@ -111,6 +132,9 @@ export default function CountdownTimer({
   });
 
   const [ariaTimer, setAriaTimer] = useState('');
+  const isBreakPhase = !countToTime && cyclePhase === 'rest' && cooldownSeconds > 0;
+  const phaseLabel = isBreakPhase ? 'Break' : '';
+  const timerStyle = isBreakPhase ? { color: breakColor ?? defaultBreakColor } : undefined;
 
   // Update the document title with the timer
   useEffect(() => {
@@ -119,22 +143,30 @@ export default function CountdownTimer({
     const formattedTime =
       h === 0 ? `${sign}${fmt(m)}:${fmt(s)}` : `${sign}${fmt(h)}:${fmt(m)}:${fmt(s)}`;
     if (updateTitle) {
-      document.title = `${formattedTime} Countdown | YACT`;
+      document.title = `${isBreakPhase ? 'Break ' : ''}${formattedTime} Countdown | YACT`;
     }
     if (s % 5 === 0) {
       setAriaTimer(formattedTime);
     }
-  }, [updateTitle, timeLeft, h, m, s]);
+  }, [isBreakPhase, updateTitle, timeLeft, h, m, s]);
 
   // Handle manual editor saving
-  const handleSaveEditor = (hours: number, minutes: number, seconds: number) => {
+  const handleSaveEditor = (
+    hours: number,
+    minutes: number,
+    seconds: number,
+    restSeconds: number,
+    selectedBreakColor: string | null,
+  ) => {
     const hh = Math.max(0, hours);
     const mm = Math.max(0, minutes);
     const ss = Math.max(0, seconds);
+    const cooldown = Math.max(0, restSeconds);
 
     localStorage.setItem('hours', hh.toString());
     localStorage.setItem('minutes', mm.toString());
     localStorage.setItem('seconds', ss.toString());
+    localStorage.setItem('cooldownSeconds', cooldown.toString());
 
     const totalSeconds = hh * 3600 + mm * 60 + ss;
     if (countToTime) {
@@ -151,7 +183,8 @@ export default function CountdownTimer({
     }
 
     closeEditor();
-    onTimeUpdate?.(hh, mm, ss);
+    onTimeUpdate?.(hh, mm, ss, cooldown, selectedBreakColor);
+    onSetBreakColor(selectedBreakColor);
   };
 
   const fmt = (val: number) => val.toString().padStart(2, '0');
@@ -181,7 +214,8 @@ export default function CountdownTimer({
         className="text-[15vw] font-mono cursor-pointer select-none text-center leading-none"
         role="timer"
         tabIndex={0}
-        aria-label={`Countdown Timer: ${h} hours, ${m} minutes, ${s} seconds`}
+        aria-label={`${isBreakPhase ? 'Break ' : ''}Countdown Timer: ${h} hours, ${m} minutes, ${s} seconds`}
+        style={timerStyle}
         onClick={openEditor}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -192,6 +226,13 @@ export default function CountdownTimer({
       >
         {timeLeft < 0 && '+'}
         {fmt(h)}:{fmt(m)}:{fmt(s)}
+      </div>
+      <div
+        className="mt-2 h-8 text-sm uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400"
+        style={timerStyle}
+        aria-hidden="true"
+      >
+        {phaseLabel || '\u00A0'}
       </div>
 
       <div id="screen-reader-update" aria-live="polite">
@@ -205,6 +246,9 @@ export default function CountdownTimer({
         seconds={editorTime.s}
         onClose={closeEditor}
         onSave={handleSaveEditor}
+        cooldownSeconds={cooldownSeconds}
+        breakColor={breakColor}
+        defaultBreakColor={defaultBreakColor}
       />
     </div>
   );

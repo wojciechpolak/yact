@@ -20,6 +20,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { CyclePhase } from '@/store/timerSlice';
 
 interface UseCountdownTimerOptions {
   countUp: boolean;
@@ -27,11 +28,14 @@ interface UseCountdownTimerOptions {
   // and count down to the next occurrence of that clock time.
   countToTime: boolean;
   initialTime: number; // in seconds
+  cooldownSeconds: number;
+  cyclePhase: CyclePhase;
   isActive: boolean; // from the parent
   onActiveChange: (active: boolean) => void; // parent can set isActive
   onPlaySound: (url: string) => void;
   onSendNotification: () => void;
   onSetTargetTime?: (targetTime: number | null) => void; // optional
+  onSetCyclePhase?: (phase: CyclePhase) => void;
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
   repeat: boolean;
@@ -43,11 +47,14 @@ export function useCountdownTimer({
   countUp,
   countToTime,
   initialTime,
+  cooldownSeconds,
+  cyclePhase,
   isActive,
   onActiveChange,
   onPlaySound,
   onSendNotification,
   onSetTargetTime,
+  onSetCyclePhase,
   playEndSound,
   playLastTenSecondsSound,
   repeat,
@@ -106,6 +113,9 @@ export function useCountdownTimer({
     // use that first:
     if (!isInitialTargetTimeUsed && !targetTimeState && targetTime && targetTime > now) {
       setTargetTimeState(targetTime);
+      if (countToTime) {
+        onSetCyclePhase?.('work');
+      }
       setIsInitialTargetTimeUsed(true);
       return;
     }
@@ -126,13 +136,16 @@ export function useCountdownTimer({
         } else {
           const newTarget = computeNextClockTarget(initialTime);
           setTargetTimeState(newTarget);
+          onSetCyclePhase?.('work');
           onSetTargetTime?.(newTarget);
         }
       } else {
-        const adjustedTime = timeLeft <= 0 && !countUp ? initialTime : timeLeft;
+        const fallbackDuration =
+          cyclePhase === 'rest' && cooldownSeconds > 0 ? cooldownSeconds : initialTime;
+        const adjustedTime = timeLeft <= 0 && !countUp ? fallbackDuration : timeLeft;
         const newTarget = now + adjustedTime * 1000;
         setTargetTimeState(newTarget);
-        if (timeLeft > 0) {
+        if (timeLeft > 0 || (cyclePhase === 'rest' && cooldownSeconds > 0)) {
           onSetTargetTime?.(newTarget);
         }
       }
@@ -141,12 +154,15 @@ export function useCountdownTimer({
     countUp,
     countToTime,
     computeNextClockTarget,
+    cooldownSeconds,
     initialTime,
     isActive,
     isInitialTargetTimeUsed,
     onActiveChange,
+    onSetCyclePhase,
     onSetTargetTime,
     repeat,
+    cyclePhase,
     targetTime,
     targetTimeState,
     timeLeft,
@@ -164,6 +180,8 @@ export function useCountdownTimer({
     const timerId = setInterval(() => {
       const now = Date.now();
       let newTimeLeft = Math.round((targetTimeState - now) / 1000);
+      const shouldPlayLastTenSecondsSound =
+        playLastTenSecondsSound && !(cyclePhase === 'rest' && cooldownSeconds < 10);
 
       if (newTimeLeft <= 0) {
         if (newTimeLeft === 0) {
@@ -181,14 +199,18 @@ export function useCountdownTimer({
             const dayMs = 24 * 60 * 60 * 1000;
             const nextTarget = targetTimeState + dayMs;
             setTargetTimeState(nextTarget);
+            onSetCyclePhase?.('work');
             onSetTargetTime?.(nextTarget);
             newTimeLeft = Math.round((nextTarget - now) / 1000);
           } else {
-            // Reset to the initial duration
-            const nextTarget = now + initialTime * 1000;
+            const nextPhase: CyclePhase =
+              cyclePhase === 'rest' ? 'work' : cooldownSeconds > 0 ? 'rest' : 'work';
+            const nextDuration = nextPhase === 'rest' ? cooldownSeconds : initialTime;
+            const nextTarget = now + nextDuration * 1000;
             setTargetTimeState(nextTarget);
+            onSetCyclePhase?.(nextPhase);
             onSetTargetTime?.(nextTarget);
-            newTimeLeft = initialTime;
+            newTimeLeft = nextDuration;
           }
         } else if (countUp) {
           // keep going negative
@@ -199,7 +221,7 @@ export function useCountdownTimer({
         }
       } else {
         // We have time > 0
-        if (playLastTenSecondsSound && newTimeLeft <= 10) {
+        if (shouldPlayLastTenSecondsSound && newTimeLeft <= 10) {
           onPlaySound('/audio/tick.mp3');
         }
       }
@@ -211,10 +233,12 @@ export function useCountdownTimer({
   }, [
     countUp,
     countToTime,
+    cooldownSeconds,
     initialTime,
     isActive,
     isEditing,
     onActiveChange,
+    onSetCyclePhase,
     onPlaySound,
     onSendNotification,
     onSetTargetTime,
@@ -222,6 +246,7 @@ export function useCountdownTimer({
     playLastTenSecondsSound,
     repeat,
     showNotifications,
+    cyclePhase,
     targetTimeState,
   ]);
 

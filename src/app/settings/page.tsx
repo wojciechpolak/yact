@@ -55,6 +55,15 @@ const SettingsPage = () => {
     seconds: hashParams.get('seconds') || localStorage.getItem('seconds') || '0',
     repeat: hashParams.get('repeat') || localStorage.getItem('repeat') || 'false',
     active: hashParams.get('active') || localStorage.getItem('active') || 'false',
+    cooldownSeconds:
+      hashParams.get('cooldownSeconds') || localStorage.getItem('cooldownSeconds') || '0',
+    ...(hashParams.get('breakColor') || localStorage.getItem('breakColor')
+      ? { breakColor: hashParams.get('breakColor') || localStorage.getItem('breakColor') || '' }
+      : {}),
+    cyclePhase: hashParams.get('cyclePhase') || localStorage.getItem('cyclePhase') || 'work',
+    ...(hashParams.get('targetTime') || localStorage.getItem('targetTime')
+      ? { targetTime: hashParams.get('targetTime') || localStorage.getItem('targetTime') || '0' }
+      : {}),
   });
   if (countToTime) {
     queryParams.set('mode', 'target');

@@ -27,11 +27,14 @@ const createOptions = (overrides: Partial<TimerOptions> = {}): TimerOptions => (
   countUp: false,
   countToTime: false,
   initialTime: 60,
+  cooldownSeconds: 0,
+  cyclePhase: 'work',
   isActive: false,
   onActiveChange: vi.fn(),
   onPlaySound: vi.fn(),
   onSendNotification: vi.fn(),
   onSetTargetTime: vi.fn(),
+  onSetCyclePhase: vi.fn(),
   playEndSound: true,
   playLastTenSecondsSound: true,
   repeat: false,
@@ -159,6 +162,63 @@ test('repeat restarts a fixed-duration countdown instead of stopping it', () => 
   expect(onSetTargetTime).toHaveBeenCalledTimes(2);
 });
 
+test('repeat with a cooldown enters rest before starting the next work cycle', async () => {
+  const onActiveChange = vi.fn();
+  const onSetTargetTime = vi.fn();
+  const onSetCyclePhase = vi.fn();
+
+  const { result, rerender } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 1,
+      cooldownSeconds: 2,
+      isActive: true,
+      onActiveChange,
+      onSetTargetTime,
+      onSetCyclePhase,
+      repeat: true,
+      playEndSound: false,
+    }),
+  });
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(2);
+  expect(onSetCyclePhase).toHaveBeenCalledWith('rest');
+
+  act(() => {
+    rerender(
+      createOptions({
+        initialTime: 1,
+        cooldownSeconds: 2,
+        cyclePhase: 'rest',
+        isActive: true,
+        onActiveChange,
+        onSetTargetTime,
+        onSetCyclePhase,
+        repeat: true,
+        playEndSound: false,
+      }),
+    );
+  });
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(1);
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(1);
+  expect(onSetCyclePhase).toHaveBeenCalledWith('work');
+  expect(onActiveChange).not.toHaveBeenCalledWith(false);
+  expect(onSetTargetTime).toHaveBeenCalledTimes(3);
+});
+
 test('count-up mode keeps counting below zero', () => {
   const onActiveChange = vi.fn();
   const onPlaySound = vi.fn();
@@ -200,6 +260,62 @@ test('restores a running timer from a stored targetTime without recomputing it',
   // The stored targetTime is used directly on first activation;
   // onSetTargetTime must NOT be called for this initialisation path.
   expect(onSetTargetTime).not.toHaveBeenCalled();
+});
+
+test('pause and resume keep the current rest phase and remaining time', () => {
+  const onSetCyclePhase = vi.fn();
+
+  const { result, rerender } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 1,
+      cooldownSeconds: 3,
+      isActive: true,
+      repeat: true,
+      onSetCyclePhase,
+      playEndSound: false,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(3);
+
+  act(() => {
+    rerender(
+      createOptions({
+        initialTime: 1,
+        cooldownSeconds: 3,
+        cyclePhase: 'rest',
+        isActive: false,
+        repeat: true,
+        onSetCyclePhase,
+        playEndSound: false,
+      }),
+    );
+  });
+
+  act(() => {
+    rerender(
+      createOptions({
+        initialTime: 1,
+        cooldownSeconds: 3,
+        cyclePhase: 'rest',
+        isActive: true,
+        repeat: true,
+        onSetCyclePhase,
+        playEndSound: false,
+      }),
+    );
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(2);
+  expect(onSetCyclePhase).toHaveBeenCalledWith('rest');
 });
 
 test('repeat in count-to-time mode reschedules to the next day occurrence', () => {
@@ -309,4 +425,27 @@ test('plays the last ten seconds sound once the countdown reaches ten seconds', 
 
   expect(result.current.timeLeft).toBe(10);
   expect(onPlaySound).toHaveBeenCalledWith('/audio/tick.mp3');
+});
+
+test('short break countdowns do not play the last ten seconds sound', () => {
+  const onPlaySound = vi.fn();
+
+  const { result } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 9,
+      cooldownSeconds: 9,
+      cyclePhase: 'rest',
+      isActive: true,
+      onPlaySound,
+      playEndSound: false,
+      playLastTenSecondsSound: true,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(8);
+  expect(onPlaySound).not.toHaveBeenCalled();
 });

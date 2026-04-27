@@ -19,6 +19,9 @@
 
 import { expect, test } from 'vitest';
 import {
+  setCooldownSeconds,
+  setBreakColor,
+  setCyclePhase,
   resetTimer,
   setInitialTime,
   setIsActive,
@@ -34,6 +37,9 @@ test('timerReducer returns the initial state', () => {
     savedInitialTime: 60,
     isActive: false,
     repeat: false,
+    cooldownSeconds: 0,
+    breakColor: null,
+    cyclePhase: 'work',
     targetTime: null,
   });
 });
@@ -54,6 +60,18 @@ test('setRepeat toggles repeat state', () => {
   expect(timerReducer(undefined, setRepeat(true)).repeat).toBe(true);
 });
 
+test('setCooldownSeconds updates the rest duration', () => {
+  expect(timerReducer(undefined, setCooldownSeconds(15)).cooldownSeconds).toBe(15);
+});
+
+test('setBreakColor updates the break font color', () => {
+  expect(timerReducer(undefined, setBreakColor('#ff0000')).breakColor).toBe('#ff0000');
+});
+
+test('setCyclePhase updates the current cycle phase', () => {
+  expect(timerReducer(undefined, setCyclePhase('rest')).cyclePhase).toBe('rest');
+});
+
 test('setTargetTime stores the target timestamp', () => {
   expect(timerReducer(undefined, setTargetTime(123456789)).targetTime).toBe(123456789);
 });
@@ -65,6 +83,9 @@ test('resetTimer restores the saved initial time and clears active flags', () =>
       savedInitialTime: 42,
       isActive: true,
       repeat: true,
+      cooldownSeconds: 9,
+      breakColor: '#ff0000',
+      cyclePhase: 'rest',
       targetTime: 123,
     },
     resetTimer(),
@@ -75,6 +96,9 @@ test('resetTimer restores the saved initial time and clears active flags', () =>
     savedInitialTime: 42,
     isActive: false,
     repeat: true,
+    cooldownSeconds: 9,
+    breakColor: '#ff0000',
+    cyclePhase: 'work',
     targetTime: null,
   });
 });
