@@ -24,6 +24,7 @@ import { StoreProvider } from '@/context/StoreProvider';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { SerwistProvider } from '@/app/serwist';
 import Footer from '@/components/Footer';
+import { withBasePath } from '@/lib/basePath';
 import './globals.css';
 
 interface Props {
@@ -49,7 +50,10 @@ export default function RootLayout({ children }: Props) {
         <ThemeProvider attribute="class">
           <StoreProvider>
             <SettingsProvider>
-              <SerwistProvider swUrl="/sw.js" disable={process.env.NODE_ENV === 'development'}>
+              <SerwistProvider
+                swUrl={withBasePath('/sw.js')}
+                disable={process.env.NODE_ENV === 'development'}
+              >
                 {children}
                 <Footer />
               </SerwistProvider>

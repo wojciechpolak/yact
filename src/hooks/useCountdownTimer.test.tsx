@@ -29,6 +29,7 @@ const createOptions = (overrides: Partial<TimerOptions> = {}): TimerOptions => (
   initialTime: 60,
   cooldownSeconds: 0,
   cyclePhase: 'work',
+  endSoundUrl: '/audio/end.mp3',
   isActive: false,
   onActiveChange: vi.fn(),
   onPlaySound: vi.fn(),
@@ -40,6 +41,7 @@ const createOptions = (overrides: Partial<TimerOptions> = {}): TimerOptions => (
   repeat: false,
   showNotifications: false,
   targetTime: null,
+  tickSoundUrl: '/audio/tick.mp3',
   ...overrides,
 });
 

@@ -24,6 +24,7 @@ import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useSettings } from '@/context/SettingsContext';
+import { withBasePath } from '@/lib/basePath';
 import type { CyclePhase } from '@/store/timerSlice';
 import TimerEditorModal from '@/components/TimerEditorModal';
 
@@ -78,6 +79,9 @@ export default function CountdownTimer({
   const { initializeAudioContext, unlockAudioContext, preloadSounds, playSound } =
     useAudioManager();
   const defaultBreakColor = '#60a5fa';
+  const endSoundUrl = withBasePath('/audio/end.mp3');
+  const tickSoundUrl = withBasePath('/audio/tick.mp3');
+  const notificationIconUrl = withBasePath('/icons/icon-192x192.png');
 
   // Notification function
   const sendNotification = () => {
@@ -88,14 +92,14 @@ export default function CountdownTimer({
     if (Notification.permission === 'granted') {
       new Notification('Timer Finished', {
         body: 'Your countdown timer has ended.',
-        icon: '/icons/icon-192x192.png',
+        icon: notificationIconUrl,
       });
     } else if (Notification.permission !== 'denied') {
       Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
           new Notification('Timer Finished', {
             body: 'Your countdown timer has ended.',
-            icon: '/icons/icon-192x192.png',
+            icon: notificationIconUrl,
           });
         }
       });
@@ -107,9 +111,16 @@ export default function CountdownTimer({
     if (isActive) {
       initializeAudioContext();
       unlockAudioContext();
-      preloadSounds(['/audio/end.mp3', '/audio/tick.mp3']);
+      preloadSounds([endSoundUrl, tickSoundUrl]);
     }
-  }, [initializeAudioContext, isActive, preloadSounds, unlockAudioContext]);
+  }, [
+    endSoundUrl,
+    initializeAudioContext,
+    isActive,
+    preloadSounds,
+    tickSoundUrl,
+    unlockAudioContext,
+  ]);
 
   // Hook: main timer logic
   const { timeLeft, setTimeLeft, isEditing, openEditor, closeEditor, h, m, s } = useCountdownTimer({
@@ -118,6 +129,7 @@ export default function CountdownTimer({
     initialTime,
     cooldownSeconds,
     cyclePhase,
+    endSoundUrl,
     isActive,
     onActiveChange,
     onPlaySound: playSound,
@@ -129,6 +141,7 @@ export default function CountdownTimer({
     repeat,
     showNotifications,
     targetTime,
+    tickSoundUrl,
   });
 
   const [ariaTimer, setAriaTimer] = useState('');

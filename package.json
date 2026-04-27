@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && serwist build",
+    "build:pages": "YACT_STATIC_EXPORT=1 next build && serwist build && cp public/sw.js out/sw.js",
     "start": "next start",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

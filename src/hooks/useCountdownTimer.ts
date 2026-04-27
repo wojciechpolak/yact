@@ -30,6 +30,7 @@ interface UseCountdownTimerOptions {
   initialTime: number; // in seconds
   cooldownSeconds: number;
   cyclePhase: CyclePhase;
+  endSoundUrl: string;
   isActive: boolean; // from the parent
   onActiveChange: (active: boolean) => void; // parent can set isActive
   onPlaySound: (url: string) => void;
@@ -41,6 +42,7 @@ interface UseCountdownTimerOptions {
   repeat: boolean;
   showNotifications: boolean;
   targetTime?: number | null; // optional
+  tickSoundUrl: string;
 }
 
 export function useCountdownTimer({
@@ -49,6 +51,7 @@ export function useCountdownTimer({
   initialTime,
   cooldownSeconds,
   cyclePhase,
+  endSoundUrl,
   isActive,
   onActiveChange,
   onPlaySound,
@@ -60,6 +63,7 @@ export function useCountdownTimer({
   repeat,
   showNotifications,
   targetTime,
+  tickSoundUrl,
 }: UseCountdownTimerOptions) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
@@ -186,7 +190,7 @@ export function useCountdownTimer({
       if (newTimeLeft <= 0) {
         if (newTimeLeft === 0) {
           if (playEndSound) {
-            onPlaySound('/audio/end.mp3');
+            onPlaySound(endSoundUrl);
           }
           if (showNotifications) {
             onSendNotification();
@@ -222,7 +226,7 @@ export function useCountdownTimer({
       } else {
         // We have time > 0
         if (shouldPlayLastTenSecondsSound && newTimeLeft <= 10) {
-          onPlaySound('/audio/tick.mp3');
+          onPlaySound(tickSoundUrl);
         }
       }
 
@@ -247,7 +251,9 @@ export function useCountdownTimer({
     repeat,
     showNotifications,
     cyclePhase,
+    endSoundUrl,
     targetTimeState,
+    tickSoundUrl,
   ]);
 
   // Editor open/close
