@@ -54,7 +54,7 @@
     "jsdom": "^29.0.1",
     "oxfmt": "^0.44.0",
     "oxlint": "^1.57.0",
-    "postcss": "^8.5.8",
+    "postcss": "^8.5.10",
     "serwist": "^9.5.7",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
