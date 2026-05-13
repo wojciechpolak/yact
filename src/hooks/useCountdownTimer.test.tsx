@@ -18,6 +18,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { useCountdownTimer } from './useCountdownTimer';
 
@@ -246,6 +247,24 @@ test('count-up mode keeps counting below zero', () => {
   expect(onPlaySound).not.toHaveBeenCalled();
 });
 
+test('resyncs immediately when the page becomes visible again', () => {
+  const { result } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 60,
+      isActive: true,
+      playEndSound: false,
+      playLastTenSecondsSound: false,
+    }),
+  });
+
+  act(() => {
+    vi.setSystemTime(new Date(2026, 0, 1, 10, 0, 5));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  expect(result.current.timeLeft).toBe(55);
+});
+
 test('restores a running timer from a stored targetTime without recomputing it', () => {
   const futureTarget = Date.now() + 60000; // 60 s in the future
   const onSetTargetTime = vi.fn();
@@ -262,6 +281,44 @@ test('restores a running timer from a stored targetTime without recomputing it',
   // The stored targetTime is used directly on first activation;
   // onSetTargetTime must NOT be called for this initialisation path.
   expect(onSetTargetTime).not.toHaveBeenCalled();
+});
+
+test('completes the timer if it crosses zero while browser timers are suspended', async () => {
+  const onActiveChange = vi.fn();
+  const onPlaySound = vi.fn();
+  const onSendNotification = vi.fn();
+  const { result } = renderHook(() => {
+    const [isActive, setIsActive] = useState(true);
+
+    return useCountdownTimer(
+      createOptions({
+        initialTime: 1,
+        isActive,
+        onActiveChange: (active) => {
+          onActiveChange(active);
+          setIsActive(active);
+        },
+        onPlaySound,
+        onSendNotification,
+        showNotifications: true,
+      }),
+    );
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(0);
+  });
+
+  await act(async () => {
+    vi.setSystemTime(new Date(2026, 0, 1, 10, 0, 3));
+    document.dispatchEvent(new Event('visibilitychange'));
+    await Promise.resolve();
+  });
+
+  expect(result.current.timeLeft).toBe(0);
+  expect(onPlaySound).toHaveBeenCalledWith('/audio/end.mp3');
+  expect(onSendNotification).toHaveBeenCalledTimes(1);
+  expect(onActiveChange).toHaveBeenCalledWith(false);
 });
 
 test('pause and resume keep the current rest phase and remaining time', () => {

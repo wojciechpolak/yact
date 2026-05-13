@@ -19,7 +19,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CyclePhase } from '@/store/timerSlice';
 
 interface UseCountdownTimerOptions {
@@ -69,6 +69,12 @@ export function useCountdownTimer({
   const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isInitialTargetTimeUsed, setIsInitialTargetTimeUsed] = useState(false);
+  const timeLeftRef = useRef(timeLeft);
+  const lastTickSoundSecondRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
 
   // Helper to compute the next target timestamp from a time-of-day in seconds
   const computeNextClockTarget = useCallback((secondsSinceMidnight: number) => {
@@ -107,6 +113,7 @@ export function useCountdownTimer({
     if (!isActive) {
       // Paused/stopped
       setTargetTimeState(null);
+      lastTickSoundSecondRef.current = null;
       return;
     }
 
@@ -176,85 +183,109 @@ export function useCountdownTimer({
    * 3) The main interval:
    *    - If active + not editing + targetTimeState => tick each second
    */
-  useEffect(() => {
-    if (!isActive || isEditing || targetTimeState === null) {
+  const updateTimeLeft = useCallback(() => {
+    if (targetTimeState === null) {
       return;
     }
 
-    const timerId = setInterval(() => {
-      const now = Date.now();
-      let newTimeLeft = Math.round((targetTimeState - now) / 1000);
-      const shouldPlayLastTenSecondsSound =
-        playLastTenSecondsSound && !(cyclePhase === 'rest' && cooldownSeconds < 10);
+    const now = Date.now();
+    let newTimeLeft = Math.round((targetTimeState - now) / 1000);
+    const previousTimeLeft = timeLeftRef.current;
+    const shouldPlayLastTenSecondsSound =
+      playLastTenSecondsSound && !(cyclePhase === 'rest' && cooldownSeconds < 10);
 
-      if (newTimeLeft <= 0) {
-        if (newTimeLeft === 0) {
-          if (playEndSound) {
-            onPlaySound(endSoundUrl);
-          }
-          if (showNotifications) {
-            onSendNotification();
-          }
+    if (newTimeLeft <= 0) {
+      if (previousTimeLeft > 0) {
+        if (playEndSound) {
+          onPlaySound(endSoundUrl);
         }
-
-        if (repeat) {
-          // Repeat behavior differs by mode
-          if (countToTime) {
-            const dayMs = 24 * 60 * 60 * 1000;
-            const nextTarget = targetTimeState + dayMs;
-            setTargetTimeState(nextTarget);
-            onSetCyclePhase?.('work');
-            onSetTargetTime?.(nextTarget);
-            newTimeLeft = Math.round((nextTarget - now) / 1000);
-          } else {
-            const nextPhase: CyclePhase =
-              cyclePhase === 'rest' ? 'work' : cooldownSeconds > 0 ? 'rest' : 'work';
-            const nextDuration = nextPhase === 'rest' ? cooldownSeconds : initialTime;
-            const nextTarget = now + nextDuration * 1000;
-            setTargetTimeState(nextTarget);
-            onSetCyclePhase?.(nextPhase);
-            onSetTargetTime?.(nextTarget);
-            newTimeLeft = nextDuration;
-          }
-        } else if (countUp) {
-          // keep going negative
-        } else {
-          // Hard stop at 0
-          newTimeLeft = 0;
-          onActiveChange(false);
-        }
-      } else {
-        // We have time > 0
-        if (shouldPlayLastTenSecondsSound && newTimeLeft <= 10) {
-          onPlaySound(tickSoundUrl);
+        if (showNotifications) {
+          onSendNotification();
         }
       }
 
-      setTimeLeft(newTimeLeft);
-    }, 1000);
+      if (repeat) {
+        // Repeat behavior differs by mode
+        if (countToTime) {
+          const dayMs = 24 * 60 * 60 * 1000;
+          const nextTarget = targetTimeState + dayMs;
+          setTargetTimeState(nextTarget);
+          onSetCyclePhase?.('work');
+          onSetTargetTime?.(nextTarget);
+          newTimeLeft = Math.round((nextTarget - now) / 1000);
+        } else {
+          const nextPhase: CyclePhase =
+            cyclePhase === 'rest' ? 'work' : cooldownSeconds > 0 ? 'rest' : 'work';
+          const nextDuration = nextPhase === 'rest' ? cooldownSeconds : initialTime;
+          const nextTarget = now + nextDuration * 1000;
+          setTargetTimeState(nextTarget);
+          onSetCyclePhase?.(nextPhase);
+          onSetTargetTime?.(nextTarget);
+          newTimeLeft = nextDuration;
+        }
+        lastTickSoundSecondRef.current = null;
+      } else if (countUp) {
+        // keep going negative
+      } else {
+        // Hard stop at 0
+        newTimeLeft = 0;
+        onActiveChange(false);
+        lastTickSoundSecondRef.current = null;
+      }
+    } else if (shouldPlayLastTenSecondsSound && newTimeLeft <= 10) {
+      if (lastTickSoundSecondRef.current !== newTimeLeft) {
+        onPlaySound(tickSoundUrl);
+        lastTickSoundSecondRef.current = newTimeLeft;
+      }
+    } else {
+      lastTickSoundSecondRef.current = null;
+    }
 
-    return () => clearInterval(timerId);
+    timeLeftRef.current = newTimeLeft;
+    setTimeLeft(newTimeLeft);
   }, [
     countUp,
     countToTime,
     cooldownSeconds,
+    cyclePhase,
+    endSoundUrl,
     initialTime,
-    isActive,
-    isEditing,
     onActiveChange,
-    onSetCyclePhase,
     onPlaySound,
     onSendNotification,
+    onSetCyclePhase,
     onSetTargetTime,
     playEndSound,
     playLastTenSecondsSound,
     repeat,
     showNotifications,
-    cyclePhase,
-    endSoundUrl,
     targetTimeState,
     tickSoundUrl,
   ]);
+
+  useEffect(() => {
+    if (!isActive || isEditing || targetTimeState === null) {
+      return;
+    }
+
+    const resyncTimer = () => {
+      updateTimeLeft();
+    };
+
+    updateTimeLeft();
+
+    const timerId = setInterval(updateTimeLeft, 1000);
+    document.addEventListener('visibilitychange', resyncTimer);
+    window.addEventListener('focus', resyncTimer);
+    window.addEventListener('pageshow', resyncTimer);
+
+    return () => {
+      clearInterval(timerId);
+      document.removeEventListener('visibilitychange', resyncTimer);
+      window.removeEventListener('focus', resyncTimer);
+      window.removeEventListener('pageshow', resyncTimer);
+    };
+  }, [isActive, isEditing, targetTimeState, updateTimeLeft]);
 
   // Editor open/close
   const openEditor = useCallback(() => {
