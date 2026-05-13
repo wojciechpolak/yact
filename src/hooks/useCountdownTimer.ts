@@ -193,13 +193,14 @@ export function useCountdownTimer({
     const previousTimeLeft = timeLeftRef.current;
     const shouldPlayLastTenSecondsSound =
       playLastTenSecondsSound && !(cyclePhase === 'rest' && cooldownSeconds < 10);
+    const shouldSendEndNotification = countToTime || cyclePhase === 'work';
 
     if (newTimeLeft <= 0) {
       if (previousTimeLeft > 0) {
         if (playEndSound) {
           onPlaySound(endSoundUrl);
         }
-        if (showNotifications) {
+        if (showNotifications && shouldSendEndNotification) {
           onSendNotification();
         }
       }

@@ -63,6 +63,33 @@ export async function freezeTime(page: Page, now: string | number | Date) {
   );
 }
 
+export async function mockNotificationPermission(
+  page: Page,
+  permission: NotificationPermission = 'granted',
+) {
+  await page.addInitScript(
+    ({ nextPermission }) => {
+      class MockNotification {
+        static permission = nextPermission;
+
+        static requestPermission() {
+          MockNotification.permission = nextPermission;
+          return Promise.resolve(nextPermission);
+        }
+
+        constructor(_title: string, _options?: NotificationOptions) {}
+      }
+
+      Object.defineProperty(window, 'Notification', {
+        value: MockNotification,
+        configurable: true,
+        writable: true,
+      });
+    },
+    { nextPermission: permission },
+  );
+}
+
 export async function screenshotIfVisual(
   target: Page | Locator,
   name: string,

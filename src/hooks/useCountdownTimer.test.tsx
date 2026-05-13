@@ -508,3 +508,50 @@ test('short break countdowns do not play the last ten seconds sound', () => {
   expect(result.current.timeLeft).toBe(8);
   expect(onPlaySound).not.toHaveBeenCalled();
 });
+
+test('repeat cooldown completion does not send a notification for the break ending', async () => {
+  const onSendNotification = vi.fn();
+  const onSetCyclePhase = vi.fn();
+  const { result, rerender } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 1,
+      cooldownSeconds: 1,
+      isActive: true,
+      repeat: true,
+      showNotifications: true,
+      onSendNotification,
+      onSetCyclePhase,
+      playEndSound: false,
+    }),
+  });
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(1);
+  expect(onSendNotification).toHaveBeenCalledTimes(1);
+
+  act(() => {
+    rerender(
+      createOptions({
+        initialTime: 1,
+        cooldownSeconds: 1,
+        cyclePhase: 'rest',
+        isActive: true,
+        repeat: true,
+        showNotifications: true,
+        onSendNotification,
+        onSetCyclePhase,
+        playEndSound: false,
+      }),
+    );
+  });
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(1);
+  expect(onSendNotification).toHaveBeenCalledTimes(1);
+});

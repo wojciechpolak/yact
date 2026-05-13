@@ -25,6 +25,7 @@ import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useSettings } from '@/context/SettingsContext';
 import { withBasePath } from '@/lib/basePath';
+import { showTimerNotification } from '@/lib/notifications';
 import type { CyclePhase } from '@/store/timerSlice';
 import TimerEditorModal from '@/components/TimerEditorModal';
 
@@ -84,25 +85,14 @@ export default function CountdownTimer({
   const notificationIconUrl = withBasePath('/icons/icon-192x192.png');
 
   // Notification function
-  const sendNotification = () => {
-    if (!('Notification' in window)) {
-      console.log('This browser does not support desktop notification');
-      return;
-    }
-    if (Notification.permission === 'granted') {
-      new Notification('Timer Finished', {
-        body: 'Your countdown timer has ended.',
-        icon: notificationIconUrl,
-      });
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-          new Notification('Timer Finished', {
-            body: 'Your countdown timer has ended.',
-            icon: notificationIconUrl,
-          });
-        }
-      });
+  const sendNotification = async () => {
+    const shown = await showTimerNotification({
+      title: 'Timer Finished',
+      body: 'Your countdown timer has ended.',
+      icon: notificationIconUrl,
+    });
+    if (!shown) {
+      console.log('Notification could not be shown');
     }
   };
 

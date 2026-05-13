@@ -18,11 +18,21 @@
  */
 
 import { expect, test } from '@playwright/test';
-import { freezeTime, screenshotIfVisual, seedLocalStorage } from './helpers';
+import {
+  freezeTime,
+  mockNotificationPermission,
+  screenshotIfVisual,
+  seedLocalStorage,
+} from './helpers';
 
 test('settings page shows the toggles and returns to the home route with the same hash', async ({
   page,
 }) => {
+  await page.context().grantPermissions(['notifications'], {
+    origin: 'http://127.0.0.1:3000',
+  });
+  await mockNotificationPermission(page, 'granted');
+
   await seedLocalStorage(page, {
     theme: 'light',
     hours: '1',
@@ -136,6 +146,11 @@ test('settings page persists multiple preference switches and theme state', asyn
 });
 
 test('settings page can toggle every app preference switch', async ({ page }) => {
+  await page.context().grantPermissions(['notifications'], {
+    origin: 'http://127.0.0.1:3000',
+  });
+  await mockNotificationPermission(page, 'granted');
+
   await seedLocalStorage(page, {
     hours: '0',
     minutes: '1',

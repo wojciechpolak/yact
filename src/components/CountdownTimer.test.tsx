@@ -72,6 +72,12 @@ vi.mock('@/hooks/useScreenWakeLock', () => ({
   useScreenWakeLock: vi.fn(),
 }));
 
+const showTimerNotificationMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/lib/notifications', () => ({
+  showTimerNotification: (...args: unknown[]) => showTimerNotificationMock(...args),
+}));
+
 const defaultProps = {
   countUp: false,
   countToTime: false,
@@ -268,35 +274,17 @@ test('CountdownTimer preloads audio when isActive becomes true', () => {
   expect(audioMock.preloadSounds).toHaveBeenCalledWith(['/audio/end.mp3', '/audio/tick.mp3']);
 });
 
-test('sendNotification shows a Notification when permission is granted', () => {
-  const NotificationSpy = vi.fn();
-  Object.defineProperty(window, 'Notification', {
-    value: Object.assign(NotificationSpy, { permission: 'granted', requestPermission: vi.fn() }),
-    configurable: true,
-  });
+test('sendNotification delegates to the notification helper', async () => {
+  showTimerNotificationMock.mockResolvedValue(true);
 
   render(<CountdownTimer {...defaultProps} />);
-  capturedTimerOpts.onSendNotification?.();
+  await capturedTimerOpts.onSendNotification?.();
 
-  expect(NotificationSpy).toHaveBeenCalledWith('Timer Finished', expect.any(Object));
-});
-
-test('sendNotification requests permission when not yet granted', async () => {
-  const NotificationSpy = vi.fn();
-  const requestPermissionMock = vi.fn(async () => 'granted' as NotificationPermission);
-  Object.defineProperty(window, 'Notification', {
-    value: Object.assign(NotificationSpy, {
-      permission: 'default',
-      requestPermission: requestPermissionMock,
-    }),
-    configurable: true,
+  expect(showTimerNotificationMock).toHaveBeenCalledWith({
+    title: 'Timer Finished',
+    body: 'Your countdown timer has ended.',
+    icon: '/icons/icon-192x192.png',
   });
-
-  render(<CountdownTimer {...defaultProps} />);
-  capturedTimerOpts.onSendNotification?.();
-
-  expect(requestPermissionMock).toHaveBeenCalled();
-  await vi.waitFor(() => expect(NotificationSpy).toHaveBeenCalledTimes(1));
 });
 
 test('handleSaveEditor in count-to-time mode rolls over to next day when target has passed', () => {

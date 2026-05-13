@@ -25,6 +25,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useHashParams } from '@/lib/useHashParams';
+import { requestNotificationPermission } from '@/lib/notifications';
 import { useSettings } from '@/context/SettingsContext';
 
 const SettingsPage = () => {
@@ -68,6 +69,16 @@ const SettingsPage = () => {
   if (countToTime) {
     queryParams.set('mode', 'target');
   }
+
+  const handleNotificationsChange = async (checked: boolean) => {
+    if (!checked) {
+      setShowNotifications(false);
+      return;
+    }
+
+    const permission = await requestNotificationPermission();
+    setShowNotifications(permission === 'granted');
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -120,7 +131,7 @@ const SettingsPage = () => {
             <Switch
               id="showNotifications"
               checked={showNotifications}
-              onCheckedChange={(checked) => setShowNotifications(checked)}
+              onCheckedChange={handleNotificationsChange}
             />
           </div>
 
