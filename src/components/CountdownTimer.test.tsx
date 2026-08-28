@@ -29,7 +29,7 @@ const capturedTimerOpts = vi.hoisted(() => ({
 // Mutable mock state — updated per test in beforeEach / within tests
 const timerMock = vi.hoisted(() => ({
   timeLeft: -5 as number,
-  setTimeLeft: vi.fn<[number], void>(),
+  setTimeLeft: vi.fn<(time: number) => void>(),
   isEditing: false,
   openEditor: vi.fn(),
   closeEditor: vi.fn(),

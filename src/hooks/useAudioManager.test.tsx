@@ -38,7 +38,7 @@ type MockAudioContext = {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  delete (window as typeof window & { AudioContext?: typeof AudioContext }).AudioContext;
+  Reflect.deleteProperty(window, 'AudioContext');
 });
 
 test('initializeAudioContext does nothing when window.AudioContext is unavailable', () => {
@@ -89,7 +89,7 @@ test('initializeAudioContext creates a single AudioContext instance', () => {
 
 test('unlockAudioContext resumes suspended audio and wires user interaction handlers', () => {
   const context = {
-    state: 'suspended',
+    state: 'suspended' as MockAudioContext['state'],
     destination: {} as AudioDestinationNode,
     resume: vi.fn(async () => {
       context.state = 'running';
