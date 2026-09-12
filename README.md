@@ -9,6 +9,16 @@ YACT has been inspired by Big Timer (an online service), but has been
 developed as a free software, self-hosted alternative, built from
 scratch with Next.js, React, and Tailwind CSS.
 
+> [!TIP]
+> You can use the automatically deployed app at
+> [wojciechpolak.github.io/yact](https://wojciechpolak.github.io/yact/).
+> To run it on your own server, see [Running](#running) below.
+
+> [!NOTE]
+> Install YACT as a PWA to launch it from your phone or computer like a
+> native app. It also works offline, so you can keep your countdowns
+> running without an internet connection.
+
 ## Features
 
 - Customizable Timer: Set hours, minutes, and seconds to create a
