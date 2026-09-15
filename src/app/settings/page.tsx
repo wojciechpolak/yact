@@ -20,13 +20,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { FaArrowLeft } from 'react-icons/fa';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useHashParams } from '@/lib/useHashParams';
 import { requestNotificationPermission } from '@/lib/notifications';
+import { supportsVibration } from '@/lib/vibration';
 import { useSettings } from '@/context/SettingsContext';
 
 const SettingsPage = () => {
@@ -42,6 +43,8 @@ const SettingsPage = () => {
     countToTime,
     playEndSound,
     setPlayEndSound,
+    vibrateOnEnd,
+    setVibrateOnEnd,
     playLastTenSecondsSound,
     setPlayLastTenSecondsSound,
     minCooldownForTickSound,
@@ -54,6 +57,13 @@ const SettingsPage = () => {
 
   // Kept as a string so the field can be cleared while typing
   const [localMinCooldown, setLocalMinCooldown] = useState(String(minCooldownForTickSound));
+
+  // iOS has no Vibration API, so the switch would be a dead control there.
+  const [canVibrate, setCanVibrate] = useState(false);
+
+  useEffect(() => {
+    setCanVibrate(supportsVibration());
+  }, []);
 
   // Build query parameters object to pass back to the main page
   const queryParams = new URLSearchParams({
@@ -154,6 +164,22 @@ const SettingsPage = () => {
               onCheckedChange={(checked) => setPlayEndSound(checked)}
             />
           </div>
+
+          {canVibrate && (
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="vibrateOnEnd"
+                className="text-xl relative inline-flex items-center cursor-pointer"
+              >
+                Vibrate when timer ends
+              </Label>
+              <Switch
+                id="vibrateOnEnd"
+                checked={vibrateOnEnd}
+                onCheckedChange={(checked) => setVibrateOnEnd(checked)}
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <Label

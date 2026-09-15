@@ -26,6 +26,7 @@ import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useSettings } from '@/context/SettingsContext';
 import { withBasePath } from '@/lib/basePath';
 import { showTimerNotification } from '@/lib/notifications';
+import { vibrate } from '@/lib/vibration';
 import type { CyclePhase } from '@/store/timerSlice';
 import TimerEditorModal from '@/components/TimerEditorModal';
 
@@ -72,7 +73,8 @@ export default function CountdownTimer({
   onSetCyclePhase,
   onSetBreakColor,
 }: CountdownTimerProps) {
-  const { showNotifications, updateTitle, keepAwake, minCooldownForTickSound } = useSettings();
+  const { showNotifications, updateTitle, keepAwake, minCooldownForTickSound, vibrateOnEnd } =
+    useSettings();
 
   useScreenWakeLock(isActive, keepAwake);
 
@@ -124,6 +126,7 @@ export default function CountdownTimer({
     onActiveChange,
     onPlaySound: playSound,
     onSendNotification: sendNotification,
+    onVibrate: vibrate,
     onSetTargetTime,
     onSetCyclePhase,
     playEndSound,
@@ -133,6 +136,7 @@ export default function CountdownTimer({
     showNotifications,
     targetTime,
     tickSoundUrl,
+    vibrateOnEnd,
   });
 
   const [ariaTimer, setAriaTimer] = useState('');

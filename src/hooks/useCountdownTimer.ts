@@ -35,6 +35,7 @@ interface UseCountdownTimerOptions {
   onActiveChange: (active: boolean) => void; // parent can set isActive
   onPlaySound: (url: string) => void;
   onSendNotification: () => void;
+  onVibrate: () => void;
   onSetTargetTime?: (targetTime: number | null) => void; // optional
   onSetCyclePhase?: (phase: CyclePhase) => void;
   playEndSound: boolean;
@@ -45,6 +46,7 @@ interface UseCountdownTimerOptions {
   showNotifications: boolean;
   targetTime?: number | null; // optional
   tickSoundUrl: string;
+  vibrateOnEnd: boolean;
 }
 
 export function useCountdownTimer({
@@ -58,6 +60,7 @@ export function useCountdownTimer({
   onActiveChange,
   onPlaySound,
   onSendNotification,
+  onVibrate,
   onSetTargetTime,
   onSetCyclePhase,
   playEndSound,
@@ -67,6 +70,7 @@ export function useCountdownTimer({
   showNotifications,
   targetTime,
   tickSoundUrl,
+  vibrateOnEnd,
 }: UseCountdownTimerOptions) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
@@ -204,6 +208,9 @@ export function useCountdownTimer({
         if (playEndSound) {
           onPlaySound(endSoundUrl);
         }
+        if (vibrateOnEnd) {
+          onVibrate();
+        }
         if (showNotifications && shouldSendEndNotification) {
           onSendNotification();
         }
@@ -258,6 +265,7 @@ export function useCountdownTimer({
     onActiveChange,
     onPlaySound,
     onSendNotification,
+    onVibrate,
     onSetCyclePhase,
     onSetTargetTime,
     playEndSound,
@@ -267,6 +275,7 @@ export function useCountdownTimer({
     showNotifications,
     targetTimeState,
     tickSoundUrl,
+    vibrateOnEnd,
   ]);
 
   useEffect(() => {

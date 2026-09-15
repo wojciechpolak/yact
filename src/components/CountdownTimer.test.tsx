@@ -24,6 +24,8 @@ import CountdownTimer from './CountdownTimer';
 // Captures callbacks passed into useCountdownTimer so tests can invoke them
 const capturedTimerOpts = vi.hoisted(() => ({
   onSendNotification: undefined as (() => void) | undefined,
+  onVibrate: undefined as (() => void) | undefined,
+  vibrateOnEnd: undefined as boolean | undefined,
 }));
 
 // Mutable mock state — updated per test in beforeEach / within tests
@@ -45,6 +47,8 @@ const settingsMock = vi.hoisted(() => ({
   keepAwake: false,
   countToTime: false,
   setCountToTime: vi.fn(),
+  vibrateOnEnd: false,
+  setVibrateOnEnd: vi.fn(),
 }));
 
 vi.mock('@/context/SettingsContext', () => ({
@@ -63,8 +67,14 @@ vi.mock('@/hooks/useAudioManager', () => ({
 }));
 
 vi.mock('@/hooks/useCountdownTimer', () => ({
-  useCountdownTimer: (opts: { onSendNotification: () => void }) => {
+  useCountdownTimer: (opts: {
+    onSendNotification: () => void;
+    onVibrate: () => void;
+    vibrateOnEnd: boolean;
+  }) => {
     capturedTimerOpts.onSendNotification = opts.onSendNotification;
+    capturedTimerOpts.onVibrate = opts.onVibrate;
+    capturedTimerOpts.vibrateOnEnd = opts.vibrateOnEnd;
     return { ...timerMock };
   },
 }));
@@ -112,7 +122,10 @@ beforeEach(() => {
   settingsMock.countToTime = false;
   settingsMock.updateTitle = false;
   settingsMock.showNotifications = false;
+  settingsMock.vibrateOnEnd = false;
   capturedTimerOpts.onSendNotification = undefined;
+  capturedTimerOpts.onVibrate = undefined;
+  capturedTimerOpts.vibrateOnEnd = undefined;
   localStorage.clear();
 });
 
@@ -285,6 +298,30 @@ test('sendNotification delegates to the notification helper', async () => {
     title: 'Timer Finished',
     body: 'Your countdown timer has ended.',
     icon: '/icons/icon-192x192.png',
+  });
+});
+
+test('CountdownTimer passes the vibration setting and a working vibrate callback', () => {
+  const vibrateMock = vi.fn(() => true);
+  Object.defineProperty(navigator, 'vibrate', {
+    value: vibrateMock,
+    configurable: true,
+    writable: true,
+  });
+  settingsMock.vibrateOnEnd = true;
+
+  render(<CountdownTimer {...defaultProps} />);
+
+  expect(capturedTimerOpts.vibrateOnEnd).toBe(true);
+
+  capturedTimerOpts.onVibrate?.();
+
+  expect(vibrateMock).toHaveBeenCalledWith([200, 100, 200, 100, 400]);
+
+  Object.defineProperty(navigator, 'vibrate', {
+    value: undefined,
+    configurable: true,
+    writable: true,
   });
 });
 

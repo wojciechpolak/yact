@@ -47,6 +47,7 @@ test('settings page shows the toggles and returns to the home route with the sam
     minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
+    vibrateOnEnd: 'false',
   });
 
   await page.goto('/settings#hours=1&minutes=2&seconds=3&repeat=true&active=false');
@@ -66,6 +67,10 @@ test('settings page shows the toggles and returns to the home route with the sam
   await expect(
     page.getByRole('switch', { name: 'Play sound at each of the last 10 seconds' }),
   ).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('switch', { name: 'Vibrate when timer ends' })).toHaveAttribute(
+    'aria-checked',
+    'false',
+  );
   await expect(page.getByRole('switch', { name: 'Update title' })).toHaveAttribute(
     'aria-checked',
     'true',
@@ -103,6 +108,7 @@ test('settings back link preserves target mode when count-to-time is enabled', a
     minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
+    vibrateOnEnd: 'false',
   });
 
   await page.goto('/settings#hours=10&minutes=5&seconds=0&repeat=false&active=false');
@@ -127,6 +133,7 @@ test('settings page persists multiple preference switches and theme state', asyn
     minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
+    vibrateOnEnd: 'false',
   });
 
   await page.goto('/settings');
@@ -167,6 +174,7 @@ test('settings page can toggle every app preference switch', async ({ page }) =>
     minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
+    vibrateOnEnd: 'false',
   });
 
   await page.goto('/settings');
@@ -175,18 +183,21 @@ test('settings page can toggle every app preference switch', async ({ page }) =>
   const notifications = page.getByRole('switch', { name: 'Show notifications when timer ends' });
   const endSound = page.getByRole('switch', { name: 'Play sound when timer ends' });
   const lastTen = page.getByRole('switch', { name: 'Play sound at each of the last 10 seconds' });
+  const vibrate = page.getByRole('switch', { name: 'Vibrate when timer ends' });
   const updateTitle = page.getByRole('switch', { name: 'Update title' });
 
   await countUp.click();
   await notifications.click();
   await endSound.click();
   await lastTen.click();
+  await vibrate.click();
   await updateTitle.click();
 
   await expect(countUp).toHaveAttribute('aria-checked', 'false');
   await expect(notifications).toHaveAttribute('aria-checked', 'true');
   await expect(endSound).toHaveAttribute('aria-checked', 'false');
   await expect(lastTen).toHaveAttribute('aria-checked', 'false');
+  await expect(vibrate).toHaveAttribute('aria-checked', 'true');
   await expect(updateTitle).toHaveAttribute('aria-checked', 'false');
 
   await expect
@@ -202,8 +213,23 @@ test('settings page can toggle every app preference switch', async ({ page }) =>
     .poll(async () => page.evaluate(() => window.localStorage.getItem('playLastTenSecondsSound')))
     .toBe('false');
   await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('vibrateOnEnd')))
+    .toBe('true');
+  await expect
     .poll(async () => page.evaluate(() => window.localStorage.getItem('updateTitle')))
     .toBe('false');
+});
+
+test('settings page hides the vibration switch without the Vibration API', async ({ page }) => {
+  await page.addInitScript(() => {
+    // Emulate iOS Safari, which has no Vibration API
+    Object.defineProperty(navigator, 'vibrate', { value: undefined, configurable: true });
+  });
+
+  await page.goto('/settings');
+
+  await expect(page.getByRole('switch', { name: 'Play sound when timer ends' })).toBeVisible();
+  await expect(page.getByRole('switch', { name: 'Vibrate when timer ends' })).toHaveCount(0);
 });
 
 test('settings page persists the minimum break length for the tick sound', async ({ page }) => {
@@ -220,6 +246,7 @@ test('settings page persists the minimum break length for the tick sound', async
     minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
+    vibrateOnEnd: 'false',
   });
 
   await page.goto('/settings');
@@ -261,6 +288,7 @@ test('settings page can switch between system and dark themes', async ({ page })
     minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
+    vibrateOnEnd: 'false',
   });
 
   await page.goto('/settings');

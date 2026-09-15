@@ -33,6 +33,8 @@ interface Settings {
   minCooldownForTickSound: number;
   showNotifications: boolean;
   updateTitle: boolean;
+  // Vibrate when the countdown ends, on devices with the Vibration API.
+  vibrateOnEnd: boolean;
 }
 
 interface SettingsContextProps extends Settings {
@@ -44,6 +46,7 @@ interface SettingsContextProps extends Settings {
   setMinCooldownForTickSound: (value: number) => void;
   setShowNotifications: (value: boolean) => void;
   setUpdateTitle: (value: boolean) => void;
+  setVibrateOnEnd: (value: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextProps | undefined>(undefined);
@@ -64,6 +67,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const savedMinCooldownForTickSound = localStorage.getItem('minCooldownForTickSound');
     const savedShowNotifications = localStorage.getItem('showNotifications');
     const savedUpdateTitle = localStorage.getItem('updateTitle');
+    const savedVibrateOnEnd = localStorage.getItem('vibrateOnEnd');
 
     const countUp = savedCountUp !== null ? savedCountUp === 'true' : true;
     const keepAwake = savedKeepAwake !== null ? savedKeepAwake === 'true' : false;
@@ -78,6 +82,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const showNotifications =
       savedShowNotifications !== null ? savedShowNotifications === 'true' : false;
     const updateTitle = savedUpdateTitle !== null ? savedUpdateTitle === 'true' : true;
+    const vibrateOnEnd = savedVibrateOnEnd !== null ? savedVibrateOnEnd === 'true' : false;
 
     setSettings({
       countUp,
@@ -88,6 +93,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       minCooldownForTickSound,
       showNotifications,
       updateTitle,
+      vibrateOnEnd,
     });
   }, []);
 
@@ -102,6 +108,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('minCooldownForTickSound', settings.minCooldownForTickSound.toString());
       localStorage.setItem('showNotifications', settings.showNotifications.toString());
       localStorage.setItem('updateTitle', settings.updateTitle.toString());
+      localStorage.setItem('vibrateOnEnd', settings.vibrateOnEnd.toString());
     }
   }, [settings]);
 
@@ -121,6 +128,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const setShowNotifications = (value: boolean) =>
     setSettings({ ...settings, showNotifications: value });
   const setUpdateTitle = (value: boolean) => setSettings({ ...settings, updateTitle: value });
+  const setVibrateOnEnd = (value: boolean) => setSettings({ ...settings, vibrateOnEnd: value });
 
   return (
     <SettingsContext.Provider
@@ -134,6 +142,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         setMinCooldownForTickSound,
         setShowNotifications,
         setUpdateTitle,
+        setVibrateOnEnd,
       }}
     >
       {children}

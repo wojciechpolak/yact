@@ -35,6 +35,9 @@ scratch with Next.js, React, and Tailwind CSS.
   - Play a ticking sound during each of the last 10 seconds. Short
     breaks stay silent: the tick is skipped for breaks up to a
     configurable length (30 seconds by default).
+- Vibration: Optionally vibrate when the timer ends. Off by default, and
+  the setting only shows up on devices with the Vibration API (e.g.
+  Android); iOS has no such API.
 - Responsive Design: Optimized for various screen sizes, including
   mobile devices.
 - Fullscreen Mode: Toggle fullscreen view for an immersive experience.

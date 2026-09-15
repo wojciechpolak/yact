@@ -38,6 +38,8 @@ const settingsMock = vi.hoisted(() => ({
   setShowNotifications: vi.fn(),
   updateTitle: true,
   setUpdateTitle: vi.fn(),
+  vibrateOnEnd: false,
+  setVibrateOnEnd: vi.fn(),
 }));
 
 vi.mock('next/link', () => ({
@@ -72,10 +74,13 @@ beforeEach(() => {
   settingsMock.playLastTenSecondsSound = true;
   settingsMock.minCooldownForTickSound = 30;
   settingsMock.setMinCooldownForTickSound.mockReset();
+  settingsMock.vibrateOnEnd = false;
+  settingsMock.setVibrateOnEnd.mockReset();
   localStorage.clear();
 });
 
 afterEach(() => {
+  setNavigatorVibrate(undefined);
   cleanup();
 });
 
@@ -110,6 +115,43 @@ test('disabling end notifications does not request permission', () => {
 
   expect(requestNotificationPermissionMock).not.toHaveBeenCalled();
   expect(settingsMock.setShowNotifications).toHaveBeenCalledWith(false);
+});
+
+const setNavigatorVibrate = (impl: ((pattern: number | number[]) => boolean) | undefined) => {
+  Object.defineProperty(navigator, 'vibrate', {
+    value: impl,
+    configurable: true,
+    writable: true,
+  });
+};
+
+test('the vibration switch reflects and updates the setting', async () => {
+  setNavigatorVibrate(() => true);
+
+  const { rerender } = render(<SettingsPage />);
+
+  const toggle = await screen.findByRole('switch', { name: 'Vibrate when timer ends' });
+  expect(toggle.getAttribute('aria-checked')).toBe('false');
+
+  fireEvent.click(toggle);
+  expect(settingsMock.setVibrateOnEnd).toHaveBeenCalledWith(true);
+
+  settingsMock.vibrateOnEnd = true;
+  rerender(<SettingsPage />);
+
+  expect(
+    screen.getByRole('switch', { name: 'Vibrate when timer ends' }).getAttribute('aria-checked'),
+  ).toBe('true');
+});
+
+test('the vibration switch is hidden without the Vibration API', async () => {
+  setNavigatorVibrate(undefined);
+
+  render(<SettingsPage />);
+
+  // The rest of the page renders, so this is not just an empty tree
+  expect(screen.getByRole('switch', { name: 'Play sound when timer ends' })).toBeDefined();
+  expect(screen.queryByRole('switch', { name: 'Vibrate when timer ends' })).toBeNull();
 });
 
 test('the minimum break length field shows the current setting and saves edits', () => {

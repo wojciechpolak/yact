@@ -63,6 +63,7 @@ const SettingsProbe = () => {
           `minCooldownForTickSound=${settings.minCooldownForTickSound}`,
           `showNotifications=${settings.showNotifications}`,
           `updateTitle=${settings.updateTitle}`,
+          `vibrateOnEnd=${settings.vibrateOnEnd}`,
         ].join(',')}
       </div>
       <button type="button" onClick={() => settings.setCountUp(!settings.countUp)}>
@@ -76,6 +77,9 @@ const SettingsProbe = () => {
       </button>
       <button type="button" onClick={() => settings.setMinCooldownForTickSound(45)}>
         set-min-cooldown
+      </button>
+      <button type="button" onClick={() => settings.setVibrateOnEnd(!settings.vibrateOnEnd)}>
+        toggle-vibrate
       </button>
     </div>
   );
@@ -101,7 +105,7 @@ test('SettingsProvider loads defaults when localStorage is empty', async () => {
 
   await waitFor(() => {
     expect(screen.getByTestId('settings-values').textContent).toBe(
-      'countUp=true,keepAwake=false,countToTime=false,playEndSound=true,playLastTenSecondsSound=true,minCooldownForTickSound=30,showNotifications=false,updateTitle=true',
+      'countUp=true,keepAwake=false,countToTime=false,playEndSound=true,playLastTenSecondsSound=true,minCooldownForTickSound=30,showNotifications=false,updateTitle=true,vibrateOnEnd=false',
     );
   });
 });
@@ -157,6 +161,7 @@ test('SettingsProvider restores saved settings and persists updates', async () =
   localStorage.setItem('minCooldownForTickSound', '45');
   localStorage.setItem('showNotifications', 'true');
   localStorage.setItem('updateTitle', 'false');
+  localStorage.setItem('vibrateOnEnd', 'true');
 
   render(
     <SettingsProvider>
@@ -166,19 +171,21 @@ test('SettingsProvider restores saved settings and persists updates', async () =
 
   await waitFor(() => {
     expect(screen.getByTestId('settings-values').textContent).toBe(
-      'countUp=false,keepAwake=true,countToTime=true,playEndSound=false,playLastTenSecondsSound=false,minCooldownForTickSound=45,showNotifications=true,updateTitle=false',
+      'countUp=false,keepAwake=true,countToTime=true,playEndSound=false,playLastTenSecondsSound=false,minCooldownForTickSound=45,showNotifications=true,updateTitle=false,vibrateOnEnd=true',
     );
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'toggle-count-up' }));
   fireEvent.click(screen.getByRole('button', { name: 'toggle-title' }));
   fireEvent.click(screen.getByRole('button', { name: 'toggle-keep-awake' }));
+  fireEvent.click(screen.getByRole('button', { name: 'toggle-vibrate' }));
 
   await waitFor(() => {
     expect(localStorage.getItem('countUp')).toBe('true');
     expect(localStorage.getItem('updateTitle')).toBe('true');
     expect(localStorage.getItem('keepAwake')).toBe('false');
     expect(localStorage.getItem('countToTime')).toBe('true');
+    expect(localStorage.getItem('vibrateOnEnd')).toBe('false');
   });
 });
 

@@ -35,6 +35,7 @@ const createOptions = (overrides: Partial<TimerOptions> = {}): TimerOptions => (
   onActiveChange: vi.fn(),
   onPlaySound: vi.fn(),
   onSendNotification: vi.fn(),
+  onVibrate: vi.fn(),
   onSetTargetTime: vi.fn(),
   onSetCyclePhase: vi.fn(),
   playEndSound: true,
@@ -44,6 +45,7 @@ const createOptions = (overrides: Partial<TimerOptions> = {}): TimerOptions => (
   showNotifications: false,
   targetTime: null,
   tickSoundUrl: '/audio/tick.mp3',
+  vibrateOnEnd: false,
   ...overrides,
 });
 
@@ -140,6 +142,44 @@ test('a completed countdown stops the timer and plays completion side effects', 
   expect(onPlaySound).toHaveBeenCalledWith('/audio/end.mp3');
   expect(onSendNotification).toHaveBeenCalledTimes(1);
   expect(onActiveChange).toHaveBeenCalledWith(false);
+});
+
+test('a completed countdown vibrates when the setting is on', () => {
+  const onVibrate = vi.fn();
+
+  renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 1,
+      isActive: true,
+      onVibrate,
+      vibrateOnEnd: true,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(onVibrate).toHaveBeenCalledTimes(1);
+});
+
+test('a completed countdown does not vibrate when the setting is off', () => {
+  const onVibrate = vi.fn();
+
+  renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 1,
+      isActive: true,
+      onVibrate,
+      vibrateOnEnd: false,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(onVibrate).not.toHaveBeenCalled();
 });
 
 test('repeat restarts a fixed-duration countdown instead of stopping it', () => {

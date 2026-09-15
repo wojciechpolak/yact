@@ -23,6 +23,9 @@ nothing anywhere, and keeps working offline.
 - A sound when the timer ends, and an optional tick during the last
   10 seconds, skipped for breaks up to a configurable length
   (30 seconds by default).
+- An optional vibration when the timer ends, off by default. The setting
+  is shown only on devices with the Vibration API, such as Android; iOS
+  does not have one.
 - Fullscreen mode.
 - Screen wake lock, so the display stays on while a timer runs.
 - Timer settings encoded in the URL hash, so a timer can be shared or
