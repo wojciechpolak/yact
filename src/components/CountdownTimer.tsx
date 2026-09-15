@@ -72,7 +72,7 @@ export default function CountdownTimer({
   onSetCyclePhase,
   onSetBreakColor,
 }: CountdownTimerProps) {
-  const { showNotifications, updateTitle, keepAwake } = useSettings();
+  const { showNotifications, updateTitle, keepAwake, minCooldownForTickSound } = useSettings();
 
   useScreenWakeLock(isActive, keepAwake);
 
@@ -128,6 +128,7 @@ export default function CountdownTimer({
     onSetCyclePhase,
     playEndSound,
     playLastTenSecondsSound,
+    minCooldownForTickSound,
     repeat,
     showNotifications,
     targetTime,

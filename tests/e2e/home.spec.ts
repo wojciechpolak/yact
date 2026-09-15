@@ -167,6 +167,7 @@ test('a short running timer reaches zero and stops automatically', async ({ page
     active: 'false',
     playEndSound: 'false',
     playLastTenSecondsSound: 'false',
+    minCooldownForTickSound: '30',
   });
 
   await page.goto('/');
@@ -189,6 +190,7 @@ test('count-up mode continues counting past zero', async ({ page }) => {
     active: 'false',
     playEndSound: 'false',
     playLastTenSecondsSound: 'false',
+    minCooldownForTickSound: '30',
   });
 
   await page.goto('/');
@@ -208,6 +210,7 @@ test('repeat mode restarts a fixed-duration countdown automatically', async ({ p
     active: 'false',
     playEndSound: 'false',
     playLastTenSecondsSound: 'false',
+    minCooldownForTickSound: '30',
   });
 
   await page.goto('/');
@@ -228,6 +231,7 @@ test('count-to-time mode counts down to the next clock occurrence', async ({ pag
     countToTime: 'true',
     playEndSound: 'false',
     playLastTenSecondsSound: 'false',
+    minCooldownForTickSound: '30',
   });
 
   await page.goto('/');

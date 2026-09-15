@@ -39,6 +39,8 @@ interface UseCountdownTimerOptions {
   onSetCyclePhase?: (phase: CyclePhase) => void;
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
+  // Breaks of at most this many seconds are too short to tick through.
+  minCooldownForTickSound: number;
   repeat: boolean;
   showNotifications: boolean;
   targetTime?: number | null; // optional
@@ -60,6 +62,7 @@ export function useCountdownTimer({
   onSetCyclePhase,
   playEndSound,
   playLastTenSecondsSound,
+  minCooldownForTickSound,
   repeat,
   showNotifications,
   targetTime,
@@ -192,7 +195,8 @@ export function useCountdownTimer({
     let newTimeLeft = Math.round((targetTimeState - now) / 1000);
     const previousTimeLeft = timeLeftRef.current;
     const shouldPlayLastTenSecondsSound =
-      playLastTenSecondsSound && !(cyclePhase === 'rest' && cooldownSeconds < 10);
+      playLastTenSecondsSound &&
+      !(cyclePhase === 'rest' && cooldownSeconds <= minCooldownForTickSound);
     const shouldSendEndNotification = countToTime || cyclePhase === 'work';
 
     if (newTimeLeft <= 0) {
@@ -258,6 +262,7 @@ export function useCountdownTimer({
     onSetTargetTime,
     playEndSound,
     playLastTenSecondsSound,
+    minCooldownForTickSound,
     repeat,
     showNotifications,
     targetTimeState,

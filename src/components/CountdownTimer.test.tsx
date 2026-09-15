@@ -40,6 +40,7 @@ const timerMock = vi.hoisted(() => ({
 
 const settingsMock = vi.hoisted(() => ({
   showNotifications: false,
+  minCooldownForTickSound: 30,
   updateTitle: false,
   keepAwake: false,
   countToTime: false,

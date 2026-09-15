@@ -28,6 +28,7 @@ const settingsState = vi.hoisted(() => ({
   countToTime: false,
   playEndSound: true,
   playLastTenSecondsSound: true,
+  minCooldownForTickSound: 30,
   showNotifications: false,
   updateTitle: false,
 }));

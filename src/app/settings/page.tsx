@@ -20,6 +20,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useTheme } from 'next-themes';
 import { FaArrowLeft } from 'react-icons/fa';
 import { Label } from '@/components/ui/label';
@@ -43,11 +44,16 @@ const SettingsPage = () => {
     setPlayEndSound,
     playLastTenSecondsSound,
     setPlayLastTenSecondsSound,
+    minCooldownForTickSound,
+    setMinCooldownForTickSound,
     showNotifications,
     setShowNotifications,
     updateTitle,
     setUpdateTitle,
   } = useSettings();
+
+  // Kept as a string so the field can be cleared while typing
+  const [localMinCooldown, setLocalMinCooldown] = useState(String(minCooldownForTickSound));
 
   // Build query parameters object to pass back to the main page
   const queryParams = new URLSearchParams({
@@ -162,6 +168,38 @@ const SettingsPage = () => {
               onCheckedChange={(checked) => setPlayLastTenSecondsSound(checked)}
             />
           </div>
+
+          {playLastTenSecondsSound && (
+            <div className="flex items-center justify-between pl-4">
+              <Label
+                htmlFor="minCooldownForTickSound"
+                className="text-base text-gray-500 dark:text-gray-400 relative inline-flex items-center cursor-pointer"
+              >
+                Skip it for breaks up to (seconds)
+              </Label>
+              <input
+                id="minCooldownForTickSound"
+                type="number"
+                min={0}
+                value={localMinCooldown}
+                onChange={(e) => {
+                  setLocalMinCooldown(e.target.value);
+                  const parsed = parseInt(e.target.value, 10);
+                  if (!isNaN(parsed) && parsed >= 0) {
+                    setMinCooldownForTickSound(parsed);
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseInt(localMinCooldown || '0', 10);
+                  const clamped = Math.max(0, isNaN(parsed) ? 0 : parsed);
+                  setLocalMinCooldown(String(clamped));
+                  setMinCooldownForTickSound(clamped);
+                }}
+                className="w-20 text-center text-xl border-b dark:bg-zinc-900"
+                aria-label="Skip it for breaks up to (seconds)"
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <Label

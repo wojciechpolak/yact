@@ -44,6 +44,7 @@ test('settings page shows the toggles and returns to the home route with the sam
     countToTime: 'false',
     playEndSound: 'true',
     playLastTenSecondsSound: 'true',
+    minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
   });
@@ -99,6 +100,7 @@ test('settings back link preserves target mode when count-to-time is enabled', a
     countUp: 'true',
     playEndSound: 'true',
     playLastTenSecondsSound: 'true',
+    minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
   });
@@ -122,6 +124,7 @@ test('settings page persists multiple preference switches and theme state', asyn
     countToTime: 'false',
     playEndSound: 'true',
     playLastTenSecondsSound: 'true',
+    minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
   });
@@ -161,6 +164,7 @@ test('settings page can toggle every app preference switch', async ({ page }) =>
     countToTime: 'false',
     playEndSound: 'true',
     playLastTenSecondsSound: 'true',
+    minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
   });
@@ -202,6 +206,37 @@ test('settings page can toggle every app preference switch', async ({ page }) =>
     .toBe('false');
 });
 
+test('settings page persists the minimum break length for the tick sound', async ({ page }) => {
+  await seedLocalStorage(page, {
+    hours: '0',
+    minutes: '1',
+    seconds: '0',
+    repeat: 'false',
+    active: 'false',
+    countUp: 'true',
+    countToTime: 'false',
+    playEndSound: 'true',
+    playLastTenSecondsSound: 'true',
+    minCooldownForTickSound: '30',
+    showNotifications: 'false',
+    updateTitle: 'true',
+  });
+
+  await page.goto('/settings');
+
+  const minBreak = page.getByLabel('Skip it for breaks up to (seconds)');
+  await expect(minBreak).toHaveValue('30');
+
+  await minBreak.fill('45');
+
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem('minCooldownForTickSound')))
+    .toBe('45');
+
+  await page.getByRole('switch', { name: 'Play sound at each of the last 10 seconds' }).click();
+  await expect(minBreak).toBeHidden();
+});
+
 test('settings page can toggle the dark theme switch', async ({ page }) => {
   await page.goto('/settings');
 
@@ -223,6 +258,7 @@ test('settings page can switch between system and dark themes', async ({ page })
     countToTime: 'false',
     playEndSound: 'true',
     playLastTenSecondsSound: 'true',
+    minCooldownForTickSound: '30',
     showNotifications: 'false',
     updateTitle: 'true',
   });

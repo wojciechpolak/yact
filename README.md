@@ -32,7 +32,9 @@ scratch with Next.js, React, and Tailwind CSS.
   after reaching zero.
 - Sound Notifications:
   - Play a sound when the timer ends.
-  - Play a ticking sound during each of the last 10 seconds.
+  - Play a ticking sound during each of the last 10 seconds. Short
+    breaks stay silent: the tick is skipped for breaks up to a
+    configurable length (30 seconds by default).
 - Responsive Design: Optimized for various screen sizes, including
   mobile devices.
 - Fullscreen Mode: Toggle fullscreen view for an immersive experience.

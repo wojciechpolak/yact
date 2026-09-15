@@ -60,6 +60,7 @@ const SettingsProbe = () => {
           `countToTime=${settings.countToTime}`,
           `playEndSound=${settings.playEndSound}`,
           `playLastTenSecondsSound=${settings.playLastTenSecondsSound}`,
+          `minCooldownForTickSound=${settings.minCooldownForTickSound}`,
           `showNotifications=${settings.showNotifications}`,
           `updateTitle=${settings.updateTitle}`,
         ].join(',')}
@@ -72,6 +73,9 @@ const SettingsProbe = () => {
       </button>
       <button type="button" onClick={() => settings.setKeepAwake(!settings.keepAwake)}>
         toggle-keep-awake
+      </button>
+      <button type="button" onClick={() => settings.setMinCooldownForTickSound(45)}>
+        set-min-cooldown
       </button>
     </div>
   );
@@ -97,7 +101,7 @@ test('SettingsProvider loads defaults when localStorage is empty', async () => {
 
   await waitFor(() => {
     expect(screen.getByTestId('settings-values').textContent).toBe(
-      'countUp=true,keepAwake=false,countToTime=false,playEndSound=true,playLastTenSecondsSound=true,showNotifications=false,updateTitle=true',
+      'countUp=true,keepAwake=false,countToTime=false,playEndSound=true,playLastTenSecondsSound=true,minCooldownForTickSound=30,showNotifications=false,updateTitle=true',
     );
   });
 });
@@ -150,6 +154,7 @@ test('SettingsProvider restores saved settings and persists updates', async () =
   localStorage.setItem('countToTime', 'true');
   localStorage.setItem('playEndSound', 'false');
   localStorage.setItem('playLastTenSecondsSound', 'false');
+  localStorage.setItem('minCooldownForTickSound', '45');
   localStorage.setItem('showNotifications', 'true');
   localStorage.setItem('updateTitle', 'false');
 
@@ -161,7 +166,7 @@ test('SettingsProvider restores saved settings and persists updates', async () =
 
   await waitFor(() => {
     expect(screen.getByTestId('settings-values').textContent).toBe(
-      'countUp=false,keepAwake=true,countToTime=true,playEndSound=false,playLastTenSecondsSound=false,showNotifications=true,updateTitle=false',
+      'countUp=false,keepAwake=true,countToTime=true,playEndSound=false,playLastTenSecondsSound=false,minCooldownForTickSound=45,showNotifications=true,updateTitle=false',
     );
   });
 
@@ -174,5 +179,42 @@ test('SettingsProvider restores saved settings and persists updates', async () =
     expect(localStorage.getItem('updateTitle')).toBe('true');
     expect(localStorage.getItem('keepAwake')).toBe('false');
     expect(localStorage.getItem('countToTime')).toBe('true');
+  });
+});
+
+test('SettingsProvider falls back to the default minimum cooldown for a garbage value', async () => {
+  localStorage.setItem('minCooldownForTickSound', 'not-a-number');
+
+  render(
+    <SettingsProvider>
+      <SettingsProbe />
+    </SettingsProvider>,
+  );
+
+  await waitFor(() => {
+    expect(screen.getByTestId('settings-values').textContent).toContain(
+      'minCooldownForTickSound=30',
+    );
+  });
+});
+
+test('SettingsProvider persists the minimum cooldown for the tick sound', async () => {
+  render(
+    <SettingsProvider>
+      <SettingsProbe />
+    </SettingsProvider>,
+  );
+
+  await waitFor(() => {
+    expect(localStorage.getItem('minCooldownForTickSound')).toBe('30');
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: 'set-min-cooldown' }));
+
+  await waitFor(() => {
+    expect(screen.getByTestId('settings-values').textContent).toContain(
+      'minCooldownForTickSound=45',
+    );
+    expect(localStorage.getItem('minCooldownForTickSound')).toBe('45');
   });
 });

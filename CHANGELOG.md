@@ -21,7 +21,8 @@ nothing anywhere, and keeps working offline.
   configurable break color.
 - Count-up after the timer reaches zero.
 - A sound when the timer ends, and an optional tick during the last
-  10 seconds.
+  10 seconds, skipped for breaks up to a configurable length
+  (30 seconds by default).
 - Fullscreen mode.
 - Screen wake lock, so the display stays on while a timer runs.
 - Timer settings encoded in the URL hash, so a timer can be shared or

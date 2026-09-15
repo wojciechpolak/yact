@@ -29,6 +29,8 @@ interface Settings {
   countToTime: boolean;
   playEndSound: boolean;
   playLastTenSecondsSound: boolean;
+  // Skip the last seconds tick sound for breaks of at most this many seconds.
+  minCooldownForTickSound: number;
   showNotifications: boolean;
   updateTitle: boolean;
 }
@@ -39,11 +41,15 @@ interface SettingsContextProps extends Settings {
   setCountToTime: (value: boolean) => void;
   setPlayEndSound: (value: boolean) => void;
   setPlayLastTenSecondsSound: (value: boolean) => void;
+  setMinCooldownForTickSound: (value: number) => void;
   setShowNotifications: (value: boolean) => void;
   setUpdateTitle: (value: boolean) => void;
 }
 
 const SettingsContext = createContext<SettingsContextProps | undefined>(undefined);
+
+// Breaks of at most this many seconds are too short to tick through.
+export const DEFAULT_MIN_COOLDOWN_FOR_TICK_SOUND = 30;
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -55,6 +61,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const savedCountToTime = localStorage.getItem('countToTime');
     const savedPlayEndSound = localStorage.getItem('playEndSound');
     const savedPlayLastTenSecondsSound = localStorage.getItem('playLastTenSecondsSound');
+    const savedMinCooldownForTickSound = localStorage.getItem('minCooldownForTickSound');
     const savedShowNotifications = localStorage.getItem('showNotifications');
     const savedUpdateTitle = localStorage.getItem('updateTitle');
 
@@ -64,6 +71,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const playEndSound = savedPlayEndSound !== null ? savedPlayEndSound === 'true' : true;
     const playLastTenSecondsSound =
       savedPlayLastTenSecondsSound !== null ? savedPlayLastTenSecondsSound === 'true' : true;
+    const parsedMinCooldownForTickSound = parseInt(savedMinCooldownForTickSound ?? '', 10);
+    const minCooldownForTickSound = isNaN(parsedMinCooldownForTickSound)
+      ? DEFAULT_MIN_COOLDOWN_FOR_TICK_SOUND
+      : Math.max(0, parsedMinCooldownForTickSound);
     const showNotifications =
       savedShowNotifications !== null ? savedShowNotifications === 'true' : false;
     const updateTitle = savedUpdateTitle !== null ? savedUpdateTitle === 'true' : true;
@@ -74,6 +85,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       countToTime,
       playEndSound,
       playLastTenSecondsSound,
+      minCooldownForTickSound,
       showNotifications,
       updateTitle,
     });
@@ -87,6 +99,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('countToTime', settings.countToTime.toString());
       localStorage.setItem('playEndSound', settings.playEndSound.toString());
       localStorage.setItem('playLastTenSecondsSound', settings.playLastTenSecondsSound.toString());
+      localStorage.setItem('minCooldownForTickSound', settings.minCooldownForTickSound.toString());
       localStorage.setItem('showNotifications', settings.showNotifications.toString());
       localStorage.setItem('updateTitle', settings.updateTitle.toString());
     }
@@ -103,6 +116,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const setCountToTime = (value: boolean) => setSettings({ ...settings, countToTime: value });
   const setPlayLastTenSecondsSound = (value: boolean) =>
     setSettings({ ...settings, playLastTenSecondsSound: value });
+  const setMinCooldownForTickSound = (value: number) =>
+    setSettings({ ...settings, minCooldownForTickSound: Math.max(0, Math.floor(value) || 0) });
   const setShowNotifications = (value: boolean) =>
     setSettings({ ...settings, showNotifications: value });
   const setUpdateTitle = (value: boolean) => setSettings({ ...settings, updateTitle: value });
@@ -116,6 +131,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         setCountToTime,
         setPlayEndSound,
         setPlayLastTenSecondsSound,
+        setMinCooldownForTickSound,
         setShowNotifications,
         setUpdateTitle,
       }}

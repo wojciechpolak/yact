@@ -39,6 +39,7 @@ const createOptions = (overrides: Partial<TimerOptions> = {}): TimerOptions => (
   onSetCyclePhase: vi.fn(),
   playEndSound: true,
   playLastTenSecondsSound: true,
+  minCooldownForTickSound: 30,
   repeat: false,
   showNotifications: false,
   targetTime: null,
@@ -507,6 +508,78 @@ test('short break countdowns do not play the last ten seconds sound', () => {
 
   expect(result.current.timeLeft).toBe(8);
   expect(onPlaySound).not.toHaveBeenCalled();
+});
+
+test('breaks exactly at the minimum length do not play the last ten seconds sound', () => {
+  const onPlaySound = vi.fn();
+
+  const { result } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 30,
+      cooldownSeconds: 30,
+      cyclePhase: 'rest',
+      isActive: true,
+      minCooldownForTickSound: 30,
+      onPlaySound,
+      playEndSound: false,
+      playLastTenSecondsSound: true,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(21000);
+  });
+
+  expect(result.current.timeLeft).toBe(9);
+  expect(onPlaySound).not.toHaveBeenCalled();
+});
+
+test('breaks longer than the minimum length play the last ten seconds sound', () => {
+  const onPlaySound = vi.fn();
+
+  const { result } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 11,
+      cooldownSeconds: 40,
+      cyclePhase: 'rest',
+      isActive: true,
+      minCooldownForTickSound: 30,
+      onPlaySound,
+      playEndSound: false,
+      playLastTenSecondsSound: true,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(10);
+  expect(onPlaySound).toHaveBeenCalledWith('/audio/tick.mp3');
+});
+
+test('a zero minimum length lets even the shortest break tick', () => {
+  const onPlaySound = vi.fn();
+
+  const { result } = renderHook((props: TimerOptions) => useCountdownTimer(props), {
+    initialProps: createOptions({
+      initialTime: 5,
+      cooldownSeconds: 5,
+      cyclePhase: 'rest',
+      isActive: true,
+      minCooldownForTickSound: 0,
+      onPlaySound,
+      playEndSound: false,
+      playLastTenSecondsSound: true,
+    }),
+  });
+
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+
+  expect(result.current.timeLeft).toBe(4);
+  expect(onPlaySound).toHaveBeenCalledWith('/audio/tick.mp3');
 });
 
 test('repeat cooldown completion does not send a notification for the break ending', async () => {

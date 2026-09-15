@@ -32,6 +32,8 @@ const settingsMock = vi.hoisted(() => ({
   setPlayEndSound: vi.fn(),
   playLastTenSecondsSound: true,
   setPlayLastTenSecondsSound: vi.fn(),
+  minCooldownForTickSound: 30,
+  setMinCooldownForTickSound: vi.fn(),
   showNotifications: false,
   setShowNotifications: vi.fn(),
   updateTitle: true,
@@ -67,6 +69,9 @@ beforeEach(() => {
   requestNotificationPermissionMock.mockReset();
   settingsMock.showNotifications = false;
   settingsMock.setShowNotifications.mockReset();
+  settingsMock.playLastTenSecondsSound = true;
+  settingsMock.minCooldownForTickSound = 30;
+  settingsMock.setMinCooldownForTickSound.mockReset();
   localStorage.clear();
 });
 
@@ -105,4 +110,34 @@ test('disabling end notifications does not request permission', () => {
 
   expect(requestNotificationPermissionMock).not.toHaveBeenCalled();
   expect(settingsMock.setShowNotifications).toHaveBeenCalledWith(false);
+});
+
+test('the minimum break length field shows the current setting and saves edits', () => {
+  render(<SettingsPage />);
+
+  const field = screen.getByLabelText('Skip it for breaks up to (seconds)') as HTMLInputElement;
+  expect(field.value).toBe('30');
+
+  fireEvent.change(field, { target: { value: '45' } });
+
+  expect(settingsMock.setMinCooldownForTickSound).toHaveBeenCalledWith(45);
+});
+
+test('clearing the minimum break length falls back to zero on blur', () => {
+  render(<SettingsPage />);
+
+  const field = screen.getByLabelText('Skip it for breaks up to (seconds)') as HTMLInputElement;
+  fireEvent.change(field, { target: { value: '' } });
+  fireEvent.blur(field);
+
+  expect(field.value).toBe('0');
+  expect(settingsMock.setMinCooldownForTickSound).toHaveBeenLastCalledWith(0);
+});
+
+test('the minimum break length field is hidden when the tick sound is off', () => {
+  settingsMock.playLastTenSecondsSound = false;
+
+  render(<SettingsPage />);
+
+  expect(screen.queryByLabelText('Skip it for breaks up to (seconds)')).toBeNull();
 });
