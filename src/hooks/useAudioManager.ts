@@ -28,6 +28,7 @@ import { useRef, useCallback } from 'react';
 export function useAudioManager() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioBuffersRef = useRef<{ [key: string]: AudioBuffer }>({});
+  const pendingLoadsRef = useRef<{ [key: string]: Promise<AudioBuffer | null> }>({});
 
   const initializeAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -58,39 +59,88 @@ export function useAudioManager() {
     document.body.addEventListener('click', resume, false);
   }, []);
 
-  const preloadSounds = useCallback((urls: string[]) => {
-    if (!audioContextRef.current) {
-      return;
+  /**
+   * Fetches and decodes a sound once. Concurrent requests for the same url
+   * share a single fetch, and the decoded buffer is cached for later plays.
+   */
+  const loadSound = useCallback((url: string): Promise<AudioBuffer | null> => {
+    const audioCtx = audioContextRef.current;
+    if (!audioCtx) {
+      return Promise.resolve(null);
     }
 
-    urls.forEach((url) => {
-      if (!(url in audioBuffersRef.current)) {
-        fetch(url)
-          .then((response) => response.arrayBuffer())
-          .then((arrayBuffer) => audioContextRef.current!.decodeAudioData(arrayBuffer))
-          .then((audioBuffer) => {
-            audioBuffersRef.current[url] = audioBuffer;
-          })
-          .catch((error) => console.error('Error preloading sound:', error));
-      }
-    });
+    const cachedBuffer = audioBuffersRef.current[url];
+    if (cachedBuffer) {
+      return Promise.resolve(cachedBuffer);
+    }
+
+    const pendingLoad = pendingLoadsRef.current[url];
+    if (pendingLoad) {
+      return pendingLoad;
+    }
+
+    const load = fetch(url)
+      .then((response) => response.arrayBuffer())
+      .then((arrayBuffer) => audioCtx.decodeAudioData(arrayBuffer))
+      .then((audioBuffer) => {
+        audioBuffersRef.current[url] = audioBuffer;
+        return audioBuffer;
+      })
+      .catch((error) => {
+        console.error('Error preloading sound:', error);
+        return null;
+      })
+      .finally(() => {
+        delete pendingLoadsRef.current[url];
+      });
+
+    pendingLoadsRef.current[url] = load;
+    return load;
   }, []);
 
-  const playSound = useCallback((url: string) => {
-    if (!audioContextRef.current) {
-      console.warn('Cannot play sound before user interaction');
+  const preloadSounds = useCallback(
+    (urls: string[]) => {
+      urls.forEach((url) => {
+        void loadSound(url);
+      });
+    },
+    [loadSound],
+  );
+
+  const playBuffer = useCallback((audioBuffer: AudioBuffer) => {
+    const audioCtx = audioContextRef.current;
+    if (!audioCtx) {
       return;
     }
-    const audioBuffer = audioBuffersRef.current[url];
-    if (!audioBuffer) {
-      console.error('Audio buffer not found for url:', url);
-      return;
-    }
-    const source = audioContextRef.current.createBufferSource();
+    const source = audioCtx.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(audioContextRef.current.destination);
+    source.connect(audioCtx.destination);
     source.start(0);
   }, []);
+
+  const playSound = useCallback(
+    (url: string) => {
+      if (!audioContextRef.current) {
+        console.warn('Cannot play sound before user interaction');
+        return;
+      }
+
+      const audioBuffer = audioBuffersRef.current[url];
+      if (audioBuffer) {
+        playBuffer(audioBuffer);
+        return;
+      }
+
+      // Still preloading, which happens when the timer is started with only
+      // a few seconds left. Play the sound as soon as it has been decoded.
+      void loadSound(url).then((loadedBuffer) => {
+        if (loadedBuffer) {
+          playBuffer(loadedBuffer);
+        }
+      });
+    },
+    [loadSound, playBuffer],
+  );
 
   return {
     initializeAudioContext,

@@ -263,9 +263,51 @@ test('preloadSounds logs an error when fetch fails', async () => {
   });
 });
 
-test('playSound logs an error when the buffer has not been preloaded', () => {
+test('playSound plays a sound that is still being preloaded', async () => {
+  const source: MockAudioSource = {
+    buffer: null,
+    connect: vi.fn(),
+    start: vi.fn(),
+  };
+  const audioBuffer = {} as AudioBuffer;
+  const context = {
+    state: 'running',
+    destination: {} as AudioDestinationNode,
+    resume: vi.fn(),
+    createBufferSource: vi.fn(() => source),
+    decodeAudioData: vi.fn(async () => audioBuffer),
+  } satisfies MockAudioContext;
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
+  const fetchMock = vi.fn(async () => ({
+    arrayBuffer: async () => new ArrayBuffer(8),
+  }));
   const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
+  Object.defineProperty(window, 'AudioContext', { value: ctor, configurable: true });
+  vi.stubGlobal('fetch', fetchMock);
+
+  const { result } = renderHook(() => useAudioManager());
+
+  // Play before the preload had any chance to resolve
+  act(() => {
+    result.current.initializeAudioContext();
+    result.current.preloadSounds(['/audio/tick.mp3']);
+    result.current.playSound('/audio/tick.mp3');
+  });
+
+  await waitFor(() => {
+    expect(source.start).toHaveBeenCalledTimes(1);
+  });
+
+  expect(source.buffer).toBe(audioBuffer);
+  // Both calls share a single fetch, and nothing is reported as missing
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(errorSpy).not.toHaveBeenCalled();
+});
+
+test('playSound stays silent when the sound cannot be loaded', async () => {
   const context = {
     state: 'running' as const,
     destination: {} as AudioDestinationNode,
@@ -276,7 +318,13 @@ test('playSound logs an error when the buffer has not been preloaded', () => {
   const ctor = vi.fn(function AudioContextMock() {
     return context;
   });
+  const fetchMock = vi.fn(async () => {
+    throw new Error('Network error');
+  });
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
   Object.defineProperty(window, 'AudioContext', { value: ctor, configurable: true });
+  vi.stubGlobal('fetch', fetchMock);
 
   const { result } = renderHook(() => useAudioManager());
 
@@ -285,5 +333,56 @@ test('playSound logs an error when the buffer has not been preloaded', () => {
     result.current.playSound('/audio/missing.mp3');
   });
 
-  expect(errorSpy).toHaveBeenCalledWith('Audio buffer not found for url:', '/audio/missing.mp3');
+  await waitFor(() => {
+    expect(errorSpy).toHaveBeenCalledWith('Error preloading sound:', expect.any(Error));
+  });
+
+  expect(context.createBufferSource).not.toHaveBeenCalled();
+});
+
+test('a failed load is retried on the next play', async () => {
+  const source: MockAudioSource = {
+    buffer: null,
+    connect: vi.fn(),
+    start: vi.fn(),
+  };
+  const audioBuffer = {} as AudioBuffer;
+  const context = {
+    state: 'running',
+    destination: {} as AudioDestinationNode,
+    resume: vi.fn(),
+    createBufferSource: vi.fn(() => source),
+    decodeAudioData: vi.fn(async () => audioBuffer),
+  } satisfies MockAudioContext;
+  const ctor = vi.fn(function AudioContextMock() {
+    return context;
+  });
+  const fetchMock = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('Network error'))
+    .mockResolvedValue({ arrayBuffer: async () => new ArrayBuffer(8) });
+  vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+  Object.defineProperty(window, 'AudioContext', { value: ctor, configurable: true });
+  vi.stubGlobal('fetch', fetchMock);
+
+  const { result } = renderHook(() => useAudioManager());
+
+  act(() => {
+    result.current.initializeAudioContext();
+    result.current.playSound('/audio/tick.mp3');
+  });
+
+  await waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  act(() => {
+    result.current.playSound('/audio/tick.mp3');
+  });
+
+  await waitFor(() => {
+    expect(source.start).toHaveBeenCalledTimes(1);
+  });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
 });
