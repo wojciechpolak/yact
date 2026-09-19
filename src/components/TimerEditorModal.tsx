@@ -24,6 +24,55 @@ import { FaPlus, FaMinus } from 'react-icons/fa';
 import { Switch } from '@/components/ui/switch';
 import { useSettings } from '@/context/SettingsContext';
 
+/** Parses a numeric field, clamping it to 0..max (no upper bound without `max`). */
+function clampNumericInput(value: string, max?: number) {
+  const parsed = parseInt(value || '0', 10);
+  const atLeastZero = Math.max(0, isNaN(parsed) ? 0 : parsed);
+  return max === undefined ? atLeastZero : Math.min(max, atLeastZero);
+}
+
+interface TimeUnitFieldProps {
+  label: string;
+  value: string;
+  max?: number;
+  onValueChange: (value: string) => void;
+}
+
+function TimeUnitField({ label, value, max, onValueChange }: TimeUnitFieldProps) {
+  const current = () => Math.max(0, parseInt(value || '0', 10));
+
+  const increment = () => {
+    const next = current() + 1;
+    onValueChange(String(max === undefined ? next : Math.min(max, next)));
+  };
+
+  const decrement = () => {
+    const cur = current();
+    onValueChange(String(cur > 0 ? cur - 1 : 0));
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <button onClick={increment} className="text-4xl hover:scale-110 cursor-pointer">
+        <FaPlus />
+      </button>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onValueChange(e.target.value)}
+        onBlur={() => onValueChange(String(clampNumericInput(value, max)))}
+        min={0}
+        max={max}
+        className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
+      />
+      <button onClick={decrement} className="text-4xl hover:scale-110 cursor-pointer">
+        <FaMinus />
+      </button>
+      <span className="mt-2 text-xl">{label}</span>
+    </div>
+  );
+}
+
 interface TimerEditorModalProps {
   isOpen: boolean;
   hours: number; // For duration mode: duration HH; for clock mode: HH target
@@ -77,16 +126,14 @@ export default function TimerEditorModal({
   }
 
   const handleSave = () => {
-    const parsedH = parseInt(localHours || '0', 10);
-    const parsedM = parseInt(localMinutes || '0', 10);
-    const parsedS = parseInt(localSeconds || '0', 10);
-    const parsedCooldown = parseInt(localCooldownSeconds || '0', 10);
-    const hh = Math.max(0, isNaN(parsedH) ? 0 : parsedH);
-    const mm = Math.min(59, Math.max(0, isNaN(parsedM) ? 0 : parsedM));
-    const ss = Math.min(59, Math.max(0, isNaN(parsedS) ? 0 : parsedS));
-    const rest = Math.max(0, isNaN(parsedCooldown) ? 0 : parsedCooldown);
     const selectedBreakColor = localBreakColor || defaultBreakColor;
-    onSave(hh, mm, ss, rest, selectedBreakColor === defaultBreakColor ? null : selectedBreakColor);
+    onSave(
+      clampNumericInput(localHours),
+      clampNumericInput(localMinutes, 59),
+      clampNumericInput(localSeconds, 59),
+      clampNumericInput(localCooldownSeconds),
+      selectedBreakColor === defaultBreakColor ? null : selectedBreakColor,
+    );
   };
 
   return (
@@ -117,112 +164,19 @@ export default function TimerEditorModal({
         </div>
         {/* Time Editing Controls */}
         <div className="flex space-x-8 mb-8 justify-center">
-          {/* Hours */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => {
-                const cur = Math.max(0, parseInt(localHours || '0', 10));
-                setLocalHours(String(cur + 1));
-              }}
-              className="text-4xl hover:scale-110 cursor-pointer"
-            >
-              <FaPlus />
-            </button>
-            <input
-              type="number"
-              value={localHours}
-              onChange={(e) => setLocalHours(e.target.value)}
-              onBlur={() => {
-                const v = parseInt(localHours || '0', 10);
-                const clamped = Math.max(0, isNaN(v) ? 0 : v);
-                setLocalHours(String(clamped));
-              }}
-              min={0}
-              className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
-            />
-            <button
-              onClick={() => {
-                const cur = Math.max(0, parseInt(localHours || '0', 10));
-                setLocalHours(String(cur > 0 ? cur - 1 : 0));
-              }}
-              className="text-4xl hover:scale-110 cursor-pointer"
-            >
-              <FaMinus />
-            </button>
-            <span className="mt-2 text-xl">Hours</span>
-          </div>
-
-          {/* Minutes */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => {
-                const cur = Math.max(0, parseInt(localMinutes || '0', 10));
-                setLocalMinutes(String(Math.min(59, cur + 1)));
-              }}
-              className="text-4xl hover:scale-110 cursor-pointer"
-            >
-              <FaPlus />
-            </button>
-            <input
-              type="number"
-              value={localMinutes}
-              onChange={(e) => setLocalMinutes(e.target.value)}
-              onBlur={() => {
-                const v = parseInt(localMinutes || '0', 10);
-                const clamped = Math.min(59, Math.max(0, isNaN(v) ? 0 : v));
-                setLocalMinutes(String(clamped));
-              }}
-              min={0}
-              max={59}
-              className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
-            />
-            <button
-              onClick={() => {
-                const cur = Math.max(0, parseInt(localMinutes || '0', 10));
-                setLocalMinutes(String(cur > 0 ? cur - 1 : 0));
-              }}
-              className="text-4xl hover:scale-110 cursor-pointer"
-            >
-              <FaMinus />
-            </button>
-            <span className="mt-2 text-xl">Minutes</span>
-          </div>
-
-          {/* Seconds */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={() => {
-                const cur = Math.max(0, parseInt(localSeconds || '0', 10));
-                setLocalSeconds(String(Math.min(59, cur + 1)));
-              }}
-              className="text-4xl hover:scale-110 cursor-pointer"
-            >
-              <FaPlus />
-            </button>
-            <input
-              type="number"
-              value={localSeconds}
-              onChange={(e) => setLocalSeconds(e.target.value)}
-              onBlur={() => {
-                const v = parseInt(localSeconds || '0', 10);
-                const clamped = Math.min(59, Math.max(0, isNaN(v) ? 0 : v));
-                setLocalSeconds(String(clamped));
-              }}
-              min={0}
-              max={59}
-              className="w-24 text-center text-4xl border-b dark:bg-zinc-900"
-            />
-            <button
-              onClick={() => {
-                const cur = Math.max(0, parseInt(localSeconds || '0', 10));
-                setLocalSeconds(String(cur > 0 ? cur - 1 : 0));
-              }}
-              className="text-4xl hover:scale-110 cursor-pointer"
-            >
-              <FaMinus />
-            </button>
-            <span className="mt-2 text-xl">Seconds</span>
-          </div>
+          <TimeUnitField label="Hours" value={localHours} onValueChange={setLocalHours} />
+          <TimeUnitField
+            label="Minutes"
+            value={localMinutes}
+            max={59}
+            onValueChange={setLocalMinutes}
+          />
+          <TimeUnitField
+            label="Seconds"
+            value={localSeconds}
+            max={59}
+            onValueChange={setLocalSeconds}
+          />
         </div>
         <div className="mb-8 border-t border-dashed border-gray-200 pt-6 dark:border-zinc-700">
           <div className="mb-6 flex items-center justify-center gap-3 text-gray-500">
@@ -241,11 +195,9 @@ export default function TimerEditorModal({
                 type="number"
                 value={localCooldownSeconds}
                 onChange={(e) => setLocalCooldownSeconds(e.target.value)}
-                onBlur={() => {
-                  const v = parseInt(localCooldownSeconds || '0', 10);
-                  const clamped = Math.max(0, isNaN(v) ? 0 : v);
-                  setLocalCooldownSeconds(String(clamped));
-                }}
+                onBlur={() =>
+                  setLocalCooldownSeconds(String(clampNumericInput(localCooldownSeconds)))
+                }
                 min={0}
                 className="w-36 text-center text-3xl border-b dark:bg-zinc-900"
                 aria-label="Rest seconds"

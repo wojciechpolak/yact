@@ -19,16 +19,65 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAudioManager } from '@/hooks/useAudioManager';
 import { useCountdownTimer } from '@/hooks/useCountdownTimer';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useSettings } from '@/context/SettingsContext';
 import { withBasePath } from '@/lib/basePath';
+import { useTimerTitle } from '@/hooks/useTimerTitle';
+import { nextClockOccurrence } from '@/lib/clockTime';
 import { showTimerNotification } from '@/lib/notifications';
 import { vibrate } from '@/lib/vibration';
 import type { CyclePhase } from '@/store/timerSlice';
+import TimerDisplay from '@/components/TimerDisplay';
 import TimerEditorModal from '@/components/TimerEditorModal';
+
+async function sendTimerNotification(icon: string) {
+  const shown = await showTimerNotification({
+    title: 'Timer Finished',
+    body: 'Your countdown timer has ended.',
+    icon,
+  });
+  if (!shown) {
+    console.log('Notification could not be shown');
+  }
+}
+
+/**
+ * What the editor should show when opened.
+ *  - Fixed duration mode: the current duration (h/m/s from timeLeft)
+ *  - Target time mode: the selected clock time, from targetTime when available,
+ *    otherwise from initialTime read as seconds since midnight
+ */
+function resolveEditorTime({
+  countToTime,
+  targetTime,
+  initialTime,
+  h,
+  m,
+  s,
+}: {
+  countToTime: boolean;
+  targetTime: number | null;
+  initialTime: number;
+  h: number;
+  m: number;
+  s: number;
+}) {
+  if (!countToTime) {
+    return { h, m, s };
+  }
+  if (targetTime) {
+    const d = new Date(targetTime);
+    return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
+  }
+  return {
+    h: Math.floor(initialTime / 3600),
+    m: Math.floor((initialTime % 3600) / 60),
+    s: initialTime % 60,
+  };
+}
 
 interface CountdownTimerProps {
   countUp: boolean;
@@ -86,17 +135,7 @@ export default function CountdownTimer({
   const tickSoundUrl = withBasePath('/audio/tick.mp3');
   const notificationIconUrl = withBasePath('/icons/icon-192x192.png');
 
-  // Notification function
-  const sendNotification = async () => {
-    const shown = await showTimerNotification({
-      title: 'Timer Finished',
-      body: 'Your countdown timer has ended.',
-      icon: notificationIconUrl,
-    });
-    if (!shown) {
-      console.log('Notification could not be shown');
-    }
-  };
+  const sendNotification = () => sendTimerNotification(notificationIconUrl);
 
   // Preload audio if we are active
   useEffect(() => {
@@ -139,24 +178,9 @@ export default function CountdownTimer({
     vibrateOnEnd,
   });
 
-  const [ariaTimer, setAriaTimer] = useState('');
   const isBreakPhase = !countToTime && cyclePhase === 'rest' && cooldownSeconds > 0;
-  const phaseLabel = isBreakPhase ? 'Break' : '';
-  const timerStyle = isBreakPhase ? { color: breakColor ?? defaultBreakColor } : undefined;
-
-  // Update the document title with the timer
-  useEffect(() => {
-    const sign = timeLeft < 0 ? '+' : '';
-    const fmt = (val: number) => val.toString().padStart(2, '0');
-    const formattedTime =
-      h === 0 ? `${sign}${fmt(m)}:${fmt(s)}` : `${sign}${fmt(h)}:${fmt(m)}:${fmt(s)}`;
-    if (updateTitle) {
-      document.title = `${isBreakPhase ? 'Break ' : ''}${formattedTime} Countdown | YACT`;
-    }
-    if (s % 5 === 0) {
-      setAriaTimer(formattedTime);
-    }
-  }, [isBreakPhase, updateTitle, timeLeft, h, m, s]);
+  const isNegative = timeLeft < 0;
+  const ariaTimer = useTimerTitle({ h, m, s, isBreakPhase, isNegative, updateTitle });
 
   // Handle manual editor saving
   const handleSaveEditor = (
@@ -178,14 +202,9 @@ export default function CountdownTimer({
 
     const totalSeconds = hh * 3600 + mm * 60 + ss;
     if (countToTime) {
-      const now = new Date();
-      const target = new Date(now);
-      target.setHours(hh, mm, ss, 0);
-      if (target.getTime() <= now.getTime()) {
-        target.setDate(target.getDate() + 1);
-      }
-      const diffSeconds = Math.max(0, Math.round((target.getTime() - now.getTime()) / 1000));
-      setTimeLeft(diffSeconds);
+      const now = Date.now();
+      const target = nextClockOccurrence(totalSeconds, now);
+      setTimeLeft(Math.max(0, Math.round((target - now) / 1000)));
     } else {
       setTimeLeft(totalSeconds);
     }
@@ -195,57 +214,23 @@ export default function CountdownTimer({
     onSetBreakColor(selectedBreakColor);
   };
 
-  const fmt = (val: number) => val.toString().padStart(2, '0');
-
-  // Determine what values the editor should show when opened.
-  // - In fixed duration mode: show the current duration (h/m/s from timeLeft)
-  // - In target time mode: show the selected clock time (from targetTime if available,
-  //   otherwise from the initialTime seconds-since-midnight)
-  const editorTime = useMemo(() => {
-    if (countToTime) {
-      if (targetTime) {
-        const d = new Date(targetTime);
-        return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
-      }
-      const hh = Math.floor(initialTime / 3600);
-      const mm = Math.floor((initialTime % 3600) / 60);
-      const ss = initialTime % 60;
-      return { h: hh, m: mm, s: ss };
-    }
-    return { h, m, s };
-  }, [countToTime, targetTime, initialTime, h, m, s]);
+  const editorTime = useMemo(
+    () => resolveEditorTime({ countToTime, targetTime, initialTime, h, m, s }),
+    [countToTime, targetTime, initialTime, h, m, s],
+  );
 
   return (
     <div className="flex flex-col items-center">
-      {/* Timer Display */}
-      <div
-        className="text-[15vw] font-mono cursor-pointer select-none text-center leading-none"
-        role="timer"
-        tabIndex={0}
-        aria-label={`${isBreakPhase ? 'Break ' : ''}Countdown Timer: ${h} hours, ${m} minutes, ${s} seconds`}
-        style={timerStyle}
-        onClick={openEditor}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            openEditor();
-          }
-        }}
-      >
-        {timeLeft < 0 && '+'}
-        {fmt(h)}:{fmt(m)}:{fmt(s)}
-      </div>
-      <div
-        className="mt-2 h-8 text-sm uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400"
-        style={timerStyle}
-        aria-hidden="true"
-      >
-        {phaseLabel || '\u00A0'}
-      </div>
-
-      <div id="screen-reader-update" aria-live="polite">
-        {ariaTimer}
-      </div>
+      <TimerDisplay
+        h={h}
+        m={m}
+        s={s}
+        isNegative={isNegative}
+        isBreakPhase={isBreakPhase}
+        breakColor={breakColor ?? defaultBreakColor}
+        ariaTimer={ariaTimer}
+        onOpenEditor={openEditor}
+      />
 
       <TimerEditorModal
         isOpen={isEditing}

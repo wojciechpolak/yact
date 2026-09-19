@@ -20,7 +20,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useTheme } from 'next-themes';
 import { FaArrowLeft } from 'react-icons/fa';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,42 @@ import { useHashParams } from '@/lib/useHashParams';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { supportsVibration } from '@/lib/vibration';
 import { useSettings } from '@/context/SettingsContext';
+
+/** Reads a value from the URL hash, then localStorage, then the fallback. */
+function readParam(hashParams: URLSearchParams, key: string, fallback: string) {
+  return hashParams.get(key) || localStorage.getItem(key) || fallback;
+}
+
+/** Query parameters that carry the timer state back to the main page. */
+function buildReturnParams(hashParams: URLSearchParams, countToTime: boolean) {
+  const read = (key: string, fallback: string) => readParam(hashParams, key, fallback);
+  const params = new URLSearchParams();
+
+  params.set('hours', read('hours', '0'));
+  params.set('minutes', read('minutes', '1'));
+  params.set('seconds', read('seconds', '0'));
+  params.set('repeat', read('repeat', 'false'));
+  params.set('active', read('active', 'false'));
+  params.set('cooldownSeconds', read('cooldownSeconds', '0'));
+
+  const breakColor = read('breakColor', '');
+  if (breakColor) {
+    params.set('breakColor', breakColor);
+  }
+
+  params.set('cyclePhase', read('cyclePhase', 'work'));
+
+  const targetTime = read('targetTime', '');
+  if (targetTime) {
+    params.set('targetTime', targetTime);
+  }
+
+  if (countToTime) {
+    params.set('mode', 'target');
+  }
+
+  return params;
+}
 
 const SettingsPage = () => {
   const hashParams = useHashParams();
@@ -65,26 +101,8 @@ const SettingsPage = () => {
     setCanVibrate(supportsVibration());
   }, []);
 
-  // Build query parameters object to pass back to the main page
-  const queryParams = new URLSearchParams({
-    hours: hashParams.get('hours') || localStorage.getItem('hours') || '0',
-    minutes: hashParams.get('minutes') || localStorage.getItem('minutes') || '1',
-    seconds: hashParams.get('seconds') || localStorage.getItem('seconds') || '0',
-    repeat: hashParams.get('repeat') || localStorage.getItem('repeat') || 'false',
-    active: hashParams.get('active') || localStorage.getItem('active') || 'false',
-    cooldownSeconds:
-      hashParams.get('cooldownSeconds') || localStorage.getItem('cooldownSeconds') || '0',
-    ...(hashParams.get('breakColor') || localStorage.getItem('breakColor')
-      ? { breakColor: hashParams.get('breakColor') || localStorage.getItem('breakColor') || '' }
-      : {}),
-    cyclePhase: hashParams.get('cyclePhase') || localStorage.getItem('cyclePhase') || 'work',
-    ...(hashParams.get('targetTime') || localStorage.getItem('targetTime')
-      ? { targetTime: hashParams.get('targetTime') || localStorage.getItem('targetTime') || '0' }
-      : {}),
-  });
-  if (countToTime) {
-    queryParams.set('mode', 'target');
-  }
+  // Query parameters to pass back to the main page
+  const queryParams = buildReturnParams(hashParams, countToTime);
 
   const handleNotificationsChange = async (checked: boolean) => {
     if (!checked) {
@@ -94,6 +112,21 @@ const SettingsPage = () => {
 
     const permission = await requestNotificationPermission();
     setShowNotifications(permission === 'granted');
+  };
+
+  const handleMinCooldownChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setLocalMinCooldown(event.target.value);
+    const parsed = parseInt(event.target.value, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      setMinCooldownForTickSound(parsed);
+    }
+  };
+
+  const handleMinCooldownBlur = () => {
+    const parsed = parseInt(localMinCooldown || '0', 10);
+    const clamped = Math.max(0, isNaN(parsed) ? 0 : parsed);
+    setLocalMinCooldown(String(clamped));
+    setMinCooldownForTickSound(clamped);
   };
 
   return (
@@ -208,19 +241,8 @@ const SettingsPage = () => {
                 type="number"
                 min={0}
                 value={localMinCooldown}
-                onChange={(e) => {
-                  setLocalMinCooldown(e.target.value);
-                  const parsed = parseInt(e.target.value, 10);
-                  if (!isNaN(parsed) && parsed >= 0) {
-                    setMinCooldownForTickSound(parsed);
-                  }
-                }}
-                onBlur={() => {
-                  const parsed = parseInt(localMinCooldown || '0', 10);
-                  const clamped = Math.max(0, isNaN(parsed) ? 0 : parsed);
-                  setLocalMinCooldown(String(clamped));
-                  setMinCooldownForTickSound(clamped);
-                }}
+                onChange={handleMinCooldownChange}
+                onBlur={handleMinCooldownBlur}
                 className="w-20 text-center text-xl border-b dark:bg-zinc-900"
                 aria-label="Skip it for breaks up to (seconds)"
               />

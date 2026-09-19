@@ -20,7 +20,40 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTimerTarget } from '@/hooks/useTimerTarget';
+import { nextClockOccurrence } from '@/lib/clockTime';
 import type { CyclePhase } from '@/store/timerSlice';
+
+interface RepeatStep {
+  target: number;
+  phase: CyclePhase;
+  timeLeft: number;
+}
+
+/** The next cycle to run once the timer reaches zero while `repeat` is on. */
+function nextRepeatStep({
+  now,
+  countToTime,
+  cooldownSeconds,
+  cyclePhase,
+  initialTime,
+  targetTime,
+}: {
+  now: number;
+  countToTime: boolean;
+  cooldownSeconds: number;
+  cyclePhase: CyclePhase;
+  initialTime: number;
+  targetTime: number;
+}): RepeatStep {
+  if (countToTime) {
+    const target = targetTime + 24 * 60 * 60 * 1000;
+    return { target, phase: 'work', timeLeft: Math.round((target - now) / 1000) };
+  }
+  const phase: CyclePhase = cyclePhase === 'rest' ? 'work' : cooldownSeconds > 0 ? 'rest' : 'work';
+  const duration = phase === 'rest' ? cooldownSeconds : initialTime;
+  return { target: now + duration * 1000, phase, timeLeft: duration };
+}
 
 interface UseCountdownTimerOptions {
   countUp: boolean;
@@ -72,119 +105,94 @@ export function useCountdownTimer({
   tickSoundUrl,
   vibrateOnEnd,
 }: UseCountdownTimerOptions) {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
-  const [targetTimeState, setTargetTimeState] = useState<number | null>(null);
+  const [timeLeft, setTimeLeftState] = useState(initialTime);
   const [isEditing, setIsEditing] = useState(false);
-  const [isInitialTargetTimeUsed, setIsInitialTargetTimeUsed] = useState(false);
+  // Mirrors `timeLeft` so a tick can read the previous value without re-subscribing.
   const timeLeftRef = useRef(timeLeft);
   const lastTickSoundSecondRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    timeLeftRef.current = timeLeft;
-  }, [timeLeft]);
+  // Every write goes through here, so the ref can never drift from the state.
+  const setTimeLeft = useCallback((value: number) => {
+    timeLeftRef.current = value;
+    setTimeLeftState(value);
+  }, []);
 
-  // Helper to compute the next target timestamp from a time-of-day in seconds
-  const computeNextClockTarget = useCallback((secondsSinceMidnight: number) => {
-    const now = new Date();
-    const hours = Math.floor(secondsSinceMidnight / 3600);
-    const minutes = Math.floor((secondsSinceMidnight % 3600) / 60);
-    const seconds = secondsSinceMidnight % 60;
-
-    const target = new Date(now);
-    target.setHours(hours, minutes, seconds, 0);
-    if (target.getTime() <= now.getTime()) {
-      // target already passed today -> use tomorrow
-      target.setDate(target.getDate() + 1);
-    }
-    return target.getTime();
+  const resetTickSound = useCallback(() => {
+    lastTickSoundSecondRef.current = null;
   }, []);
 
   // 1) Keep local timeLeft in sync if `initialTime` changes externally
   useEffect(() => {
     if (countToTime) {
-      const nextTarget = computeNextClockTarget(initialTime);
       const now = Date.now();
-      const diff = Math.max(0, Math.round((nextTarget - now) / 1000));
-      setTimeLeft(diff);
+      setTimeLeft(Math.max(0, Math.round((nextClockOccurrence(initialTime, now) - now) / 1000)));
     } else {
       setTimeLeft(initialTime);
     }
-  }, [computeNextClockTarget, countToTime, initialTime]);
+  }, [countToTime, initialTime, setTimeLeft]);
 
-  /**
-   * 2) Start/Pause logic:
-   *    - If isActive goes from false → true, recalc a fresh targetTime from current timeLeft
-   *    - If isActive = false, nullify targetTime => "pause"
-   */
-  useEffect(() => {
-    if (!isActive) {
-      // Paused/stopped
-      setTargetTimeState(null);
-      lastTickSoundSecondRef.current = null;
-      return;
-    }
-
-    const now = Date.now();
-
-    // If the local `targetTimeState` is null, but we have a valid
-    // "targetTime" from the store that is still in the future,
-    // use that first:
-    if (!isInitialTargetTimeUsed && !targetTimeState && targetTime && targetTime > now) {
-      setTargetTimeState(targetTime);
-      if (countToTime) {
-        onSetCyclePhase?.('work');
-      }
-      setIsInitialTargetTimeUsed(true);
-      return;
-    }
-    setIsInitialTargetTimeUsed(true);
-
-    // If we don't have a valid future targetTime, recalc it
-    // (this covers Start after Pause, or brand-new Start).
-    if (!targetTimeState || targetTimeState < now) {
-      if (countToTime) {
-        // In target-time mode:
-        // - If counting up and not repeating and we've already passed the target (timeLeft <= 0),
-        //   set a past target so we keep counting up after resume.
-        // - Otherwise, compute the next occurrence of the desired clock time.
-        if (countUp && !repeat && timeLeft <= 0) {
-          const pastTarget = now + timeLeft * 1000; // timeLeft is negative
-          setTargetTimeState(pastTarget);
-          // Do not persist past targets to store/url
-        } else {
-          const newTarget = computeNextClockTarget(initialTime);
-          setTargetTimeState(newTarget);
-          onSetCyclePhase?.('work');
-          onSetTargetTime?.(newTarget);
-        }
-      } else {
-        const fallbackDuration =
-          cyclePhase === 'rest' && cooldownSeconds > 0 ? cooldownSeconds : initialTime;
-        const adjustedTime = timeLeft <= 0 && !countUp ? fallbackDuration : timeLeft;
-        const newTarget = now + adjustedTime * 1000;
-        setTargetTimeState(newTarget);
-        if (timeLeft > 0 || (cyclePhase === 'rest' && cooldownSeconds > 0)) {
-          onSetTargetTime?.(newTarget);
-        }
-      }
-    }
-  }, [
+  // 2) The timestamp we are counting towards (start/pause lives in here)
+  const { targetTime: targetTimeState, setTargetTime: setTargetTimeState } = useTimerTarget({
     countUp,
     countToTime,
-    computeNextClockTarget,
     cooldownSeconds,
+    cyclePhase,
     initialTime,
     isActive,
-    isInitialTargetTimeUsed,
-    onActiveChange,
+    onPause: resetTickSound,
     onSetCyclePhase,
     onSetTargetTime,
     repeat,
-    cyclePhase,
-    targetTime,
-    targetTimeState,
+    storedTargetTime: targetTime,
     timeLeft,
+  });
+
+  const announceEnd = useCallback(() => {
+    if (playEndSound) {
+      onPlaySound(endSoundUrl);
+    }
+    if (vibrateOnEnd) {
+      onVibrate();
+    }
+    if (showNotifications && (countToTime || cyclePhase === 'work')) {
+      onSendNotification();
+    }
+  }, [
+    countToTime,
+    cyclePhase,
+    endSoundUrl,
+    onPlaySound,
+    onSendNotification,
+    onVibrate,
+    playEndSound,
+    showNotifications,
+    vibrateOnEnd,
   ]);
+
+  const updateTickSound = useCallback(
+    (secondsLeft: number) => {
+      // Breaks at or under the configured cooldown are too short to tick through.
+      const ticking =
+        playLastTenSecondsSound &&
+        !(cyclePhase === 'rest' && cooldownSeconds <= minCooldownForTickSound);
+      if (!ticking || secondsLeft > 10) {
+        lastTickSoundSecondRef.current = null;
+        return;
+      }
+      if (lastTickSoundSecondRef.current !== secondsLeft) {
+        onPlaySound(tickSoundUrl);
+        lastTickSoundSecondRef.current = secondsLeft;
+      }
+    },
+    [
+      cooldownSeconds,
+      cyclePhase,
+      minCooldownForTickSound,
+      onPlaySound,
+      playLastTenSecondsSound,
+      tickSoundUrl,
+    ],
+  );
 
   /**
    * 3) The main interval:
@@ -196,86 +204,61 @@ export function useCountdownTimer({
     }
 
     const now = Date.now();
-    let newTimeLeft = Math.round((targetTimeState - now) / 1000);
-    const previousTimeLeft = timeLeftRef.current;
-    const shouldPlayLastTenSecondsSound =
-      playLastTenSecondsSound &&
-      !(cyclePhase === 'rest' && cooldownSeconds <= minCooldownForTickSound);
-    const shouldSendEndNotification = countToTime || cyclePhase === 'work';
+    const newTimeLeft = Math.round((targetTimeState - now) / 1000);
 
-    if (newTimeLeft <= 0) {
-      if (previousTimeLeft > 0) {
-        if (playEndSound) {
-          onPlaySound(endSoundUrl);
-        }
-        if (vibrateOnEnd) {
-          onVibrate();
-        }
-        if (showNotifications && shouldSendEndNotification) {
-          onSendNotification();
-        }
-      }
-
-      if (repeat) {
-        // Repeat behavior differs by mode
-        if (countToTime) {
-          const dayMs = 24 * 60 * 60 * 1000;
-          const nextTarget = targetTimeState + dayMs;
-          setTargetTimeState(nextTarget);
-          onSetCyclePhase?.('work');
-          onSetTargetTime?.(nextTarget);
-          newTimeLeft = Math.round((nextTarget - now) / 1000);
-        } else {
-          const nextPhase: CyclePhase =
-            cyclePhase === 'rest' ? 'work' : cooldownSeconds > 0 ? 'rest' : 'work';
-          const nextDuration = nextPhase === 'rest' ? cooldownSeconds : initialTime;
-          const nextTarget = now + nextDuration * 1000;
-          setTargetTimeState(nextTarget);
-          onSetCyclePhase?.(nextPhase);
-          onSetTargetTime?.(nextTarget);
-          newTimeLeft = nextDuration;
-        }
-        lastTickSoundSecondRef.current = null;
-      } else if (countUp) {
-        // keep going negative
-      } else {
-        // Hard stop at 0
-        newTimeLeft = 0;
-        onActiveChange(false);
-        lastTickSoundSecondRef.current = null;
-      }
-    } else if (shouldPlayLastTenSecondsSound && newTimeLeft <= 10) {
-      if (lastTickSoundSecondRef.current !== newTimeLeft) {
-        onPlaySound(tickSoundUrl);
-        lastTickSoundSecondRef.current = newTimeLeft;
-      }
-    } else {
-      lastTickSoundSecondRef.current = null;
+    if (newTimeLeft > 0) {
+      updateTickSound(newTimeLeft);
+      setTimeLeft(newTimeLeft);
+      return;
     }
 
-    timeLeftRef.current = newTimeLeft;
-    setTimeLeft(newTimeLeft);
+    if (timeLeftRef.current > 0) {
+      announceEnd();
+    }
+
+    if (repeat) {
+      const step = nextRepeatStep({
+        now,
+        countToTime,
+        cooldownSeconds,
+        cyclePhase,
+        initialTime,
+        targetTime: targetTimeState,
+      });
+      setTargetTimeState(step.target);
+      onSetCyclePhase?.(step.phase);
+      onSetTargetTime?.(step.target);
+      resetTickSound();
+      setTimeLeft(step.timeLeft);
+      return;
+    }
+
+    if (countUp) {
+      // keep going negative
+      setTimeLeft(newTimeLeft);
+      return;
+    }
+
+    // Hard stop at 0
+    onActiveChange(false);
+    resetTickSound();
+    setTimeLeft(0);
   }, [
+    announceEnd,
     countUp,
     countToTime,
     cooldownSeconds,
     cyclePhase,
-    endSoundUrl,
     initialTime,
     onActiveChange,
-    onPlaySound,
-    onSendNotification,
-    onVibrate,
     onSetCyclePhase,
     onSetTargetTime,
-    playEndSound,
-    playLastTenSecondsSound,
-    minCooldownForTickSound,
     repeat,
-    showNotifications,
+    resetTickSound,
+    setTargetTimeState,
+    setTimeLeft,
     targetTimeState,
-    tickSoundUrl,
-    vibrateOnEnd,
+    updateTickSound,
   ]);
 
   useEffect(() => {

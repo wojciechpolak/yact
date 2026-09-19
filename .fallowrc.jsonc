@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+
+  // Real runtime roots that no plugin or manifest declares:
+  //  - serwist.config.js is read by `serwist build` (npm run build).
+  //  - src/app/sw.ts is named by that config's `swSrc`, as a string path.
+  "entry": ["serwist.config.js", "src/app/sw.ts"],
+
+  // Read at runtime via path.resolve() in tests/e2e/helpers.ts.
+  "dynamicallyLoaded": ["tests/e2e/vrt-hide.css"],
+
+  "ignoreDependencies": [
+    // Type-only reference from a JSDoc annotation in postcss.config.mjs.
+    "postcss-load-config",
+
+    // Build-time only, despite being reachable from the sw.ts entry above.
+    // `serwist build` inlines both into public/sw.js (a self-contained 49 KB
+    // bundle with no imports), and the Dockerfile's runner stage installs
+    // nothing at all - it copies public/, .next/standalone and .next/static.
+    // Moving either to `dependencies` would add a package that is never
+    // resolved at runtime.
+    "@serwist/next",
+    "serwist",
+  ],
+
+  "health": {
+    "thresholdOverrides": [
+      {
+        "files": ["src/components/CountdownTimer.tsx"],
+        "functions": ["CountdownTimer"],
+        "maxCognitive": 21,
+        "reason": "Container component: cyclomatic is 4 and only 2 of its 21 cognitive points come from branching. The rest is fallow's prop-count (12) and hook-density (7) penalty for the 16 props page.tsx drills through it. Removing it means connecting the component to the Redux store directly, the way TimerSync does; until then this ceiling is tight enough that any added branching trips it.",
+      },
+    ],
+  },
+}

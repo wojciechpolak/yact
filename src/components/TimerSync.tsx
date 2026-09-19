@@ -34,6 +34,38 @@ import {
   setTargetTime,
 } from '@/store/timerSlice';
 
+/** Reads a value from the URL hash, falling back to localStorage. */
+function readParam(hashParams: URLSearchParams, key: string) {
+  return hashParams.get(key) || localStorage.getItem(key);
+}
+
+function toInt(value: string | null, fallback: number) {
+  return value ? parseInt(value, 10) : fallback;
+}
+
+/** Resolves the persisted timer state from the URL hash and localStorage. */
+function readStoredTimerState(hashParams: URLSearchParams) {
+  const read = (key: string) => readParam(hashParams, key);
+
+  const hours = toInt(read('hours'), 0);
+  const minutes = toInt(read('minutes'), 1);
+  const seconds = toInt(read('seconds'), 0);
+  const cooldownSecondsParam = read('cooldownSeconds');
+  const targetTimeParam = read('targetTime');
+
+  return {
+    totalSeconds: hours * 3600 + minutes * 60 + seconds,
+    repeat: read('repeat') === 'true',
+    isActive: read('active') === 'true',
+    cooldownSeconds: cooldownSecondsParam
+      ? Math.max(0, parseInt(cooldownSecondsParam, 10) || 0)
+      : 0,
+    breakColor: read('breakColor') || null,
+    cyclePhase: read('cyclePhase') === 'rest' ? ('rest' as const) : ('work' as const),
+    targetTime: targetTimeParam ? parseInt(targetTimeParam, 10) : null,
+  };
+}
+
 /**
  * TimerSync:
  *  - On mount, read from URL hash (or localStorage) => dispatch to store
@@ -64,51 +96,28 @@ export default function TimerSync() {
     }
     hasLoadedRef.current = true;
 
-    // fallback to localStorage if no hash param
-    const hoursParam = hashParams.get('hours') || localStorage.getItem('hours');
-    const minutesParam = hashParams.get('minutes') || localStorage.getItem('minutes');
-    const secondsParam = hashParams.get('seconds') || localStorage.getItem('seconds');
-    const repeatParam = hashParams.get('repeat') || localStorage.getItem('repeat');
-    const activeParam = hashParams.get('active') || localStorage.getItem('active');
-    const targetTimeParam = hashParams.get('targetTime') || localStorage.getItem('targetTime');
-    const cooldownSecondsParam =
-      hashParams.get('cooldownSeconds') || localStorage.getItem('cooldownSeconds');
-    const breakColorParam = hashParams.get('breakColor') || localStorage.getItem('breakColor');
-    const cyclePhaseParam = hashParams.get('cyclePhase') || localStorage.getItem('cyclePhase');
-    const modeParam = hashParams.get('mode');
-
-    const hours = hoursParam ? parseInt(hoursParam, 10) : 0;
-    const minutes = minutesParam ? parseInt(minutesParam, 10) : 1;
-    const seconds = secondsParam ? parseInt(secondsParam, 10) : 0;
-
-    dispatch(setRepeat(repeatParam === 'true'));
-    dispatch(setIsActive(activeParam === 'true'));
-    dispatch(
-      setCooldownSeconds(
-        cooldownSecondsParam ? Math.max(0, parseInt(cooldownSecondsParam, 10) || 0) : 0,
-      ),
-    );
-    dispatch(setBreakColor(breakColorParam || null));
-    dispatch(setCyclePhase(cyclePhaseParam === 'rest' ? 'rest' : 'work'));
-
-    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-    dispatch(setInitialTime(totalSeconds));
-    dispatch(setSavedInitialTime(totalSeconds));
-
-    if (targetTimeParam) {
-      dispatch(setTargetTime(parseInt(targetTimeParam, 10)));
-    } else {
-      dispatch(setTargetTime(null));
-    }
+    const stored = readStoredTimerState(hashParams);
+    dispatch(setRepeat(stored.repeat));
+    dispatch(setIsActive(stored.isActive));
+    dispatch(setCooldownSeconds(stored.cooldownSeconds));
+    dispatch(setBreakColor(stored.breakColor));
+    dispatch(setCyclePhase(stored.cyclePhase));
+    dispatch(setInitialTime(stored.totalSeconds));
+    dispatch(setSavedInitialTime(stored.totalSeconds));
+    dispatch(setTargetTime(stored.targetTime));
 
     // Apply mode to settings context
+    const modeParam = hashParams.get('mode');
     if (modeParam === 'target') {
       setCountToTime(true);
-    } else if (modeParam === null) {
-      const saved = localStorage.getItem('countToTime');
-      if (saved !== null) {
-        setCountToTime(saved === 'true');
-      }
+      return;
+    }
+    if (modeParam !== null) {
+      return;
+    }
+    const saved = localStorage.getItem('countToTime');
+    if (saved !== null) {
+      setCountToTime(saved === 'true');
     }
   }, [dispatch, hashParams, setCountToTime]);
 

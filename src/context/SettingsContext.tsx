@@ -52,48 +52,36 @@ interface SettingsContextProps extends Settings {
 const SettingsContext = createContext<SettingsContextProps | undefined>(undefined);
 
 // Breaks of at most this many seconds are too short to tick through.
-export const DEFAULT_MIN_COOLDOWN_FOR_TICK_SOUND = 30;
+const DEFAULT_MIN_COOLDOWN_FOR_TICK_SOUND = 30;
+
+function readStoredFlag(key: string, fallback: boolean) {
+  const saved = localStorage.getItem(key);
+  return saved !== null ? saved === 'true' : fallback;
+}
+
+function readStoredCount(key: string, fallback: number) {
+  const parsed = parseInt(localStorage.getItem(key) ?? '', 10);
+  return isNaN(parsed) ? fallback : Math.max(0, parsed);
+}
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
     // Load settings from localStorage
-    const savedCountUp = localStorage.getItem('countUp');
-    const savedKeepAwake = localStorage.getItem('keepAwake');
-    const savedCountToTime = localStorage.getItem('countToTime');
-    const savedPlayEndSound = localStorage.getItem('playEndSound');
-    const savedPlayLastTenSecondsSound = localStorage.getItem('playLastTenSecondsSound');
-    const savedMinCooldownForTickSound = localStorage.getItem('minCooldownForTickSound');
-    const savedShowNotifications = localStorage.getItem('showNotifications');
-    const savedUpdateTitle = localStorage.getItem('updateTitle');
-    const savedVibrateOnEnd = localStorage.getItem('vibrateOnEnd');
-
-    const countUp = savedCountUp !== null ? savedCountUp === 'true' : true;
-    const keepAwake = savedKeepAwake !== null ? savedKeepAwake === 'true' : false;
-    const countToTime = savedCountToTime !== null ? savedCountToTime === 'true' : false;
-    const playEndSound = savedPlayEndSound !== null ? savedPlayEndSound === 'true' : true;
-    const playLastTenSecondsSound =
-      savedPlayLastTenSecondsSound !== null ? savedPlayLastTenSecondsSound === 'true' : true;
-    const parsedMinCooldownForTickSound = parseInt(savedMinCooldownForTickSound ?? '', 10);
-    const minCooldownForTickSound = isNaN(parsedMinCooldownForTickSound)
-      ? DEFAULT_MIN_COOLDOWN_FOR_TICK_SOUND
-      : Math.max(0, parsedMinCooldownForTickSound);
-    const showNotifications =
-      savedShowNotifications !== null ? savedShowNotifications === 'true' : false;
-    const updateTitle = savedUpdateTitle !== null ? savedUpdateTitle === 'true' : true;
-    const vibrateOnEnd = savedVibrateOnEnd !== null ? savedVibrateOnEnd === 'true' : false;
-
     setSettings({
-      countUp,
-      keepAwake,
-      countToTime,
-      playEndSound,
-      playLastTenSecondsSound,
-      minCooldownForTickSound,
-      showNotifications,
-      updateTitle,
-      vibrateOnEnd,
+      countUp: readStoredFlag('countUp', true),
+      keepAwake: readStoredFlag('keepAwake', false),
+      countToTime: readStoredFlag('countToTime', false),
+      playEndSound: readStoredFlag('playEndSound', true),
+      playLastTenSecondsSound: readStoredFlag('playLastTenSecondsSound', true),
+      minCooldownForTickSound: readStoredCount(
+        'minCooldownForTickSound',
+        DEFAULT_MIN_COOLDOWN_FOR_TICK_SOUND,
+      ),
+      showNotifications: readStoredFlag('showNotifications', false),
+      updateTitle: readStoredFlag('updateTitle', true),
+      vibrateOnEnd: readStoredFlag('vibrateOnEnd', false),
     });
   }, []);
 
